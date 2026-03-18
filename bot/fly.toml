@@ -1,0 +1,12 @@
+app = "dayscore-bot"
+primary_region = "dfw"
+
+[build]
+
+[env]
+  DAYSCORE_API_URL = "https://dayscore-five.vercel.app"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
