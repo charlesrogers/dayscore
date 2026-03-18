@@ -1,3 +1,8 @@
+import { initDb } from "@/lib/db";
+import { sendMessage } from "@/lib/discord";
+import { createConversation, getActiveConversation } from "@/lib/conversation";
+import { QUESTIONS } from "@/lib/questions";
+
 export async function GET(request: Request) {
   // Verify Vercel cron secret
   const authHeader = request.headers.get("authorization");
@@ -18,25 +23,32 @@ export async function GET(request: Request) {
     return Response.json({ skipped: true, reason: "Not 5pm MT" });
   }
 
+  const channelId = process.env.DISCORD_CHANNEL_ID;
+  if (!channelId) {
+    return Response.json({ error: "No channel ID configured" }, { status: 500 });
+  }
+
+  await initDb();
+
   const today = new Date().toLocaleDateString("en-CA", {
     timeZone: "America/Denver",
   });
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dayscore.vercel.app";
-  const checkinUrl = `${appUrl}/checkin?date=${today}`;
-  const dashUrl = appUrl;
 
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
-  if (!webhookUrl) {
-    return Response.json({ error: "No webhook URL configured" }, { status: 500 });
+  // Check if there's already an active conversation for today
+  const existing = await getActiveConversation(today);
+  if (existing) {
+    return Response.json({ skipped: true, reason: "Conversation already active" });
   }
 
-  await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      content: `**Time to check in!**\n${checkinUrl}\nDashboard: ${dashUrl}`,
-    }),
-  });
+  // Send the greeting + first question
+  const firstQuestion = QUESTIONS[0];
+  const msg = await sendMessage(
+    channelId,
+    `Hey Charles, let's check in for ${today}.\n\n**${firstQuestion.text}**`
+  );
 
-  return Response.json({ ok: true, date: today });
+  // Create conversation state
+  await createConversation(today, channelId, firstQuestion.id, msg.id);
+
+  return Response.json({ ok: true, date: today, questionId: firstQuestion.id });
 }

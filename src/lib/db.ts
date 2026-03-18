@@ -22,6 +22,19 @@ export async function initDb() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS conversation_state (
+      id SERIAL PRIMARY KEY,
+      date DATE NOT NULL UNIQUE,
+      channel_id TEXT NOT NULL,
+      current_question_id TEXT NOT NULL,
+      last_bot_message_id TEXT,
+      answers JSONB DEFAULT '{}',
+      status TEXT DEFAULT 'active',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
   initialized = true;
 }
 
