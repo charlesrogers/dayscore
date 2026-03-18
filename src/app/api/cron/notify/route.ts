@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      content: `**Time to check in!**\n[Check in for ${today} →](${checkinUrl})\n[View Dashboard](${dashUrl})`,
+      content: `**Time to check in!**\n${checkinUrl}\nDashboard: ${dashUrl}`,
     }),
   });
 
