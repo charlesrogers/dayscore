@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dayscore.bot</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/node</string>
+        <string>/Users/charlesrogers/Documents/dayscore/bot/index.mjs</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>DISCORD_BOT_TOKEN</key>
+        <string>MTQ4Mzk1NTY1MDIyMzY2OTI4OA.G2nchT.fjnoE_jpkCTjRcrIhipiqI_NrBvfxym6u_b13s</string>
+        <key>DISCORD_CHANNEL_ID</key>
+        <string>1467627074608042166</string>
+        <key>DAYSCORE_API_URL</key>
+        <string>https://dayscore-five.vercel.app</string>
+        <key>CRON_SECRET</key>
+        <string>dayscore-cron-2026-secure</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/dayscore-bot.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/dayscore-bot-error.log</string>
+</dict>
+</plist>
