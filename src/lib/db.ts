@@ -80,7 +80,9 @@ export async function updateJournal(date: string, journal: string): Promise<Chec
 function rowToCheckin(row: Record<string, unknown>): CheckIn {
   return {
     id: row.id as number,
-    date: (row.date as string).split("T")[0],
+    date: row.date instanceof Date
+      ? row.date.toISOString().split("T")[0]
+      : String(row.date).split("T")[0],
     weight: row.weight !== null ? Number(row.weight) : null,
     journaled: row.journaled as boolean,
     journal_detail: row.journal_detail as string | null,
