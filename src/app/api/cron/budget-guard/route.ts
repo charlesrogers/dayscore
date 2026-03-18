@@ -1,6 +1,8 @@
 const FLY_API = "https://api.fly.io/graphql";
-const BUDGET_LIMIT = 5; // dollars — kill everything if exceeded
-const WARN_THRESHOLD = 3; // dollars — alert on Discord
+// Expected: ~$1.94/month = ~$0.065/day for 1 machine
+// We check month-to-date spend vs expected spend for this day of month + $0.50 buffer
+const MONTHLY_EXPECTED = 2.00; // dollars — 1 machine at $1.94 rounded up
+const BUFFER = 0.50; // dollars — allowance above expected before killing
 const EXPECTED_MACHINES = 1;
 
 export async function GET(request: Request) {
@@ -64,10 +66,15 @@ export async function GET(request: Request) {
     }
   }
 
-  // 4. Check spend
-  if (spend > BUDGET_LIMIT) {
+  // 4. Check spend vs expected for this point in the month
+  const dayOfMonth = new Date().getDate();
+  const expectedSpend = (MONTHLY_EXPECTED / 30) * dayOfMonth;
+  const killThreshold = expectedSpend + BUFFER;
+  const warnThreshold = expectedSpend + BUFFER * 0.5;
+
+  if (spend > killThreshold) {
     alerts.push(
-      `BUDGET EXCEEDED: $${spend.toFixed(2)} > $${BUDGET_LIMIT} limit. Stopping ALL machines.`
+      `BUDGET EXCEEDED: $${spend.toFixed(2)} spent (expected ~$${expectedSpend.toFixed(2)} by day ${dayOfMonth}, kill threshold $${killThreshold.toFixed(2)}). Stopping ALL machines.`
     );
 
     // Nuclear option — stop everything
@@ -80,8 +87,8 @@ export async function GET(request: Request) {
         }
       );
     }
-  } else if (spend > WARN_THRESHOLD) {
-    alerts.push(`WARNING: Fly.io spend at $${spend.toFixed(2)} (limit: $${BUDGET_LIMIT})`);
+  } else if (spend > warnThreshold) {
+    alerts.push(`WARNING: Fly.io spend at $${spend.toFixed(2)} (expected ~$${expectedSpend.toFixed(2)} by day ${dayOfMonth})`);
   }
 
   // 5. Alert on Discord if anything is wrong
