@@ -10,17 +10,21 @@ export async function GET(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Only send if it's actually 5pm Mountain Time
-  const mtHour = parseInt(
-    new Date().toLocaleString("en-US", {
-      timeZone: "America/Denver",
-      hour: "numeric",
-      hour12: false,
-    }),
-    10
-  );
-  if (mtHour !== 17) {
-    return Response.json({ skipped: true, reason: "Not 5pm MT" });
+  // Only send if it's actually 5pm Mountain Time (bypass with ?force=true for testing)
+  const { searchParams } = new URL(request.url);
+  const force = searchParams.get("force") === "true";
+  if (!force) {
+    const mtHour = parseInt(
+      new Date().toLocaleString("en-US", {
+        timeZone: "America/Denver",
+        hour: "numeric",
+        hour12: false,
+      }),
+      10
+    );
+    if (mtHour !== 17) {
+      return Response.json({ skipped: true, reason: "Not 5pm MT" });
+    }
   }
 
   const channelId = process.env.DISCORD_CHANNEL_ID;
