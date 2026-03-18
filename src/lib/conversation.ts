@@ -153,6 +153,7 @@ export async function completeConversation(
     built_shipped: typeof a.built_shipped === "string" ? a.built_shipped : null,
     felt_spirit: a.felt_spirit === true,
     brightened_day: a.brightened_day === true,
+    nolan_moment: typeof a.nolan_moment === "string" ? a.nolan_moment : null,
     daily_journal: typeof a.daily_journal === "string" ? a.daily_journal : null,
   };
   await upsertCheckin(input);

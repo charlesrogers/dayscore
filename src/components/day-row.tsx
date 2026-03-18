@@ -57,6 +57,11 @@ export function DayRow({ checkin }: { checkin: CheckIn }) {
         )}
         <Indicator value={checkin.felt_spirit} label="Spirit" />
         <Indicator value={checkin.brightened_day} label="Catherine" />
+        {checkin.nolan_moment && (
+          <span className="text-muted-foreground">
+            Nolan: <span className="text-foreground">{checkin.nolan_moment}</span>
+          </span>
+        )}
       </div>
       {checkin.daily_journal && (
         <div className="mt-2 pt-2 border-t">

@@ -22,6 +22,10 @@ export async function initDb() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  // Add nolan_moment column if it doesn't exist
+  await sql`
+    ALTER TABLE checkins ADD COLUMN IF NOT EXISTS nolan_moment TEXT
+  `;
   await sql`
     CREATE TABLE IF NOT EXISTS conversation_state (
       id SERIAL PRIMARY KEY,
@@ -58,8 +62,8 @@ export async function getCheckins(limit = 90): Promise<CheckIn[]> {
 export async function upsertCheckin(data: CheckInInput): Promise<CheckIn> {
   await initDb();
   const { rows } = await sql`
-    INSERT INTO checkins (date, weight, journaled, journal_detail, worked_out, workout_detail, built_shipped, felt_spirit, brightened_day, daily_journal)
-    VALUES (${data.date}, ${data.weight}, ${data.journaled}, ${data.journal_detail}, ${data.worked_out}, ${data.workout_detail}, ${data.built_shipped}, ${data.felt_spirit}, ${data.brightened_day}, ${data.daily_journal})
+    INSERT INTO checkins (date, weight, journaled, journal_detail, worked_out, workout_detail, built_shipped, felt_spirit, brightened_day, nolan_moment, daily_journal)
+    VALUES (${data.date}, ${data.weight}, ${data.journaled}, ${data.journal_detail}, ${data.worked_out}, ${data.workout_detail}, ${data.built_shipped}, ${data.felt_spirit}, ${data.brightened_day}, ${data.nolan_moment}, ${data.daily_journal})
     ON CONFLICT (date) DO UPDATE SET
       weight = EXCLUDED.weight,
       journaled = EXCLUDED.journaled,
@@ -69,6 +73,7 @@ export async function upsertCheckin(data: CheckInInput): Promise<CheckIn> {
       built_shipped = EXCLUDED.built_shipped,
       felt_spirit = EXCLUDED.felt_spirit,
       brightened_day = EXCLUDED.brightened_day,
+      nolan_moment = EXCLUDED.nolan_moment,
       daily_journal = EXCLUDED.daily_journal,
       updated_at = NOW()
     RETURNING *
@@ -104,6 +109,7 @@ function rowToCheckin(row: Record<string, unknown>): CheckIn {
     built_shipped: row.built_shipped as string | null,
     felt_spirit: row.felt_spirit as boolean,
     brightened_day: row.brightened_day as boolean,
+    nolan_moment: row.nolan_moment as string | null,
     daily_journal: row.daily_journal as string | null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,

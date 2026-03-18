@@ -57,6 +57,13 @@ export const QUESTIONS: Question[] = [
     field: "brightened_day",
   },
   {
+    id: "nolan_moment",
+    text: "Tell me a Nolan moment:",
+    type: "text",
+    field: "nolan_moment",
+    optional: true,
+  },
+  {
     id: "daily_journal",
     text: "Daily journal entry (or skip):",
     type: "textarea",

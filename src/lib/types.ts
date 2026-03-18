@@ -9,6 +9,7 @@ export interface CheckIn {
   built_shipped: string | null;
   felt_spirit: boolean;
   brightened_day: boolean;
+  nolan_moment: string | null;
   daily_journal: string | null;
   created_at: string;
   updated_at: string;
@@ -24,6 +25,7 @@ export interface CheckInInput {
   built_shipped: string | null;
   felt_spirit: boolean;
   brightened_day: boolean;
+  nolan_moment: string | null;
   daily_journal: string | null;
 }
 

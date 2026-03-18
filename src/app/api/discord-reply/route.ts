@@ -86,6 +86,8 @@ export async function POST(request: Request) {
         typeof a.built_shipped === "string" ? a.built_shipped : null,
       felt_spirit: a.felt_spirit === true,
       brightened_day: a.brightened_day === true,
+      nolan_moment:
+        typeof a.nolan_moment === "string" ? a.nolan_moment : null,
       daily_journal:
         typeof a.daily_journal === "string" ? a.daily_journal : null,
     });
@@ -103,6 +105,7 @@ export async function POST(request: Request) {
     if (a.built_shipped) parts.push(`Built: ${a.built_shipped}`);
     parts.push(`Spirit: ${a.felt_spirit ? "Yes" : "No"}`);
     parts.push(`Catherine: ${a.brightened_day ? "Yes" : "No"}`);
+    if (a.nolan_moment) parts.push(`Nolan moment: ${a.nolan_moment}`);
     if (a.daily_journal) parts.push(`\nJournal: ${a.daily_journal}`);
     parts.push(`\nDashboard: ${appUrl}`);
 

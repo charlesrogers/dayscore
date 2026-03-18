@@ -24,6 +24,7 @@ const EMPTY_INPUT: CheckInInput = {
   built_shipped: null,
   felt_spirit: false,
   brightened_day: false,
+  nolan_moment: null,
   daily_journal: null,
 };
 
