@@ -26,6 +26,9 @@ const EMPTY_INPUT: CheckInInput = {
   brightened_day: false,
   nolan_moment: null,
   daily_journal: null,
+  work_done: null,
+  skill_edge: null,
+  tomorrow_plan: null,
 };
 
 export function ChatFlow({ date }: { date: string }) {

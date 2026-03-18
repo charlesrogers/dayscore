@@ -1,6 +1,6 @@
 import { sql } from "@vercel/postgres";
-import { QUESTIONS } from "./questions";
-import { CheckInInput, Question } from "./types";
+import { getQuestionsForType } from "./questions";
+import { CheckInInput, ConversationType, Question } from "./types";
 import { upsertCheckin } from "./db";
 
 export interface ConversationState {
@@ -11,16 +11,16 @@ export interface ConversationState {
   last_bot_message_id: string | null;
   answers: Record<string, unknown>;
   status: "active" | "complete";
+  type: ConversationType;
 }
 
-// Flatten questions with follow-ups resolved dynamically
 function getNextQuestion(
   currentId: string,
-  answers: Record<string, unknown>
+  answers: Record<string, unknown>,
+  questions: Question[]
 ): Question | null {
-  // Build the effective question list based on answers so far
   const effectiveQuestions: Question[] = [];
-  for (const q of QUESTIONS) {
+  for (const q of questions) {
     effectiveQuestions.push(q);
     if (q.followUp && answers[q.field] === q.followUp.condition) {
       effectiveQuestions.push(q.followUp.question as Question);
@@ -32,7 +32,6 @@ function getNextQuestion(
     return null;
   }
 
-  // Find next question, skipping any follow-ups whose condition isn't met
   for (let i = currentIdx + 1; i < effectiveQuestions.length; i++) {
     return effectiveQuestions[i];
   }
@@ -45,7 +44,6 @@ export function parseAnswer(
 ): string | number | boolean | null {
   const text = message.trim().toLowerCase();
 
-  // Check for skip
   if (["skip", "s", "-", "n/a", "none", "nothing", "nah"].includes(text)) {
     return null;
   }
@@ -68,13 +66,25 @@ export function parseAnswer(
 }
 
 export async function getActiveConversation(
-  date: string
+  date: string,
+  type?: ConversationType
 ): Promise<ConversationState | null> {
-  const { rows } = await sql`
-    SELECT * FROM conversation_state
-    WHERE date = ${date} AND status = 'active'
-    LIMIT 1
-  `;
+  let rows;
+  if (type) {
+    const result = await sql`
+      SELECT * FROM conversation_state
+      WHERE date = ${date} AND status = 'active' AND type = ${type}
+      LIMIT 1
+    `;
+    rows = result.rows;
+  } else {
+    const result = await sql`
+      SELECT * FROM conversation_state
+      WHERE date = ${date} AND status = 'active'
+      LIMIT 1
+    `;
+    rows = result.rows;
+  }
   if (rows.length === 0) return null;
   return rowToConversation(rows[0]);
 }
@@ -83,12 +93,13 @@ export async function createConversation(
   date: string,
   channelId: string,
   questionId: string,
-  botMessageId: string
+  botMessageId: string,
+  type: ConversationType = "personal"
 ): Promise<ConversationState> {
   const { rows } = await sql`
-    INSERT INTO conversation_state (date, channel_id, current_question_id, last_bot_message_id, answers, status)
-    VALUES (${date}, ${channelId}, ${questionId}, ${botMessageId}, '{}', 'active')
-    ON CONFLICT (date) DO UPDATE SET
+    INSERT INTO conversation_state (date, channel_id, current_question_id, last_bot_message_id, answers, status, type)
+    VALUES (${date}, ${channelId}, ${questionId}, ${botMessageId}, '{}', 'active', ${type})
+    ON CONFLICT (date, type) DO UPDATE SET
       channel_id = EXCLUDED.channel_id,
       current_question_id = EXCLUDED.current_question_id,
       last_bot_message_id = EXCLUDED.last_bot_message_id,
@@ -104,18 +115,16 @@ export async function advanceConversation(
   convo: ConversationState,
   answerValue: string | number | boolean | null
 ): Promise<{ nextQuestion: Question | null; updatedConvo: ConversationState }> {
-  // Save the answer
-  const currentQuestion = findQuestionById(convo.current_question_id);
+  const questions = getQuestionsForType(convo.type);
+  const currentQuestion = findQuestionById(convo.current_question_id, questions);
   if (!currentQuestion) throw new Error(`Unknown question: ${convo.current_question_id}`);
 
   const updatedAnswers = { ...convo.answers };
   updatedAnswers[currentQuestion.field] = answerValue;
 
-  // Determine next question
-  const nextQuestion = getNextQuestion(convo.current_question_id, updatedAnswers);
+  const nextQuestion = getNextQuestion(convo.current_question_id, updatedAnswers, questions);
 
   if (nextQuestion) {
-    // Update state to next question
     const { rows } = await sql`
       UPDATE conversation_state
       SET current_question_id = ${nextQuestion.id},
@@ -126,7 +135,6 @@ export async function advanceConversation(
     `;
     return { nextQuestion, updatedConvo: rowToConversation(rows[0]) };
   } else {
-    // No more questions — complete
     const { rows } = await sql`
       UPDATE conversation_state
       SET answers = ${JSON.stringify(updatedAnswers)},
@@ -155,8 +163,20 @@ export async function completeConversation(
     brightened_day: a.brightened_day === true,
     nolan_moment: typeof a.nolan_moment === "string" ? a.nolan_moment : null,
     daily_journal: typeof a.daily_journal === "string" ? a.daily_journal : null,
+    work_done: typeof a.work_done === "string" ? a.work_done : null,
+    skill_edge: typeof a.skill_edge === "string" ? a.skill_edge : null,
+    tomorrow_plan: typeof a.tomorrow_plan === "string" ? a.tomorrow_plan : null,
   };
   await upsertCheckin(input);
+}
+
+export async function dismissConversation(date: string): Promise<boolean> {
+  const result = await sql`
+    UPDATE conversation_state
+    SET status = 'complete', updated_at = NOW()
+    WHERE date = ${date} AND status = 'active'
+  `;
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function updateBotMessageId(
@@ -170,8 +190,8 @@ export async function updateBotMessageId(
   `;
 }
 
-function findQuestionById(id: string): Question | null {
-  for (const q of QUESTIONS) {
+function findQuestionById(id: string, questions: Question[]): Question | null {
+  for (const q of questions) {
     if (q.id === id) return q;
     if (q.followUp && q.followUp.question.id === id) {
       return q.followUp.question as Question;
@@ -195,5 +215,6 @@ function rowToConversation(row: Record<string, unknown>): ConversationState {
         ? JSON.parse(row.answers)
         : (row.answers as Record<string, unknown>) || {},
     status: row.status as "active" | "complete",
+    type: (row.type as ConversationType) || "personal",
   };
 }

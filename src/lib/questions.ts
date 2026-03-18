@@ -1,6 +1,6 @@
 import { Question } from "./types";
 
-export const QUESTIONS: Question[] = [
+export const PERSONAL_QUESTIONS: Question[] = [
   {
     id: "weight",
     text: "Weight?",
@@ -71,3 +71,33 @@ export const QUESTIONS: Question[] = [
     optional: true,
   },
 ];
+
+export const WORK_QUESTIONS: Question[] = [
+  {
+    id: "work_done",
+    text: "What did you do today?",
+    type: "text",
+    field: "work_done",
+  },
+  {
+    id: "skill_edge",
+    text: "What skill did you sharpen or edge did you increase?",
+    type: "text",
+    field: "skill_edge",
+    optional: true,
+  },
+  {
+    id: "tomorrow_plan",
+    text: "What do you want to do tomorrow?",
+    type: "text",
+    field: "tomorrow_plan",
+    optional: true,
+  },
+];
+
+// Backward compat alias
+export const QUESTIONS = PERSONAL_QUESTIONS;
+
+export function getQuestionsForType(type: string): Question[] {
+  return type === "work" ? WORK_QUESTIONS : PERSONAL_QUESTIONS;
+}

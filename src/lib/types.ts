@@ -11,6 +11,9 @@ export interface CheckIn {
   brightened_day: boolean;
   nolan_moment: string | null;
   daily_journal: string | null;
+  work_done: string | null;
+  skill_edge: string | null;
+  tomorrow_plan: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,9 +30,13 @@ export interface CheckInInput {
   brightened_day: boolean;
   nolan_moment: string | null;
   daily_journal: string | null;
+  work_done: string | null;
+  skill_edge: string | null;
+  tomorrow_plan: string | null;
 }
 
 export type QuestionType = "number" | "yesno" | "text" | "textarea";
+export type ConversationType = "personal" | "work";
 
 export interface Question {
   id: string;

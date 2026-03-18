@@ -1,11 +1,19 @@
 {
   "crons": [
     {
-      "path": "/api/cron/notify",
+      "path": "/api/cron/notify?type=personal",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/notify?type=personal",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/notify?type=work",
       "schedule": "0 23 * * *"
     },
     {
-      "path": "/api/cron/notify",
+      "path": "/api/cron/notify?type=work",
       "schedule": "0 0 * * *"
     },
     {

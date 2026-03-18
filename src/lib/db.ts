@@ -22,10 +22,10 @@ export async function initDb() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
-  // Add nolan_moment column if it doesn't exist
-  await sql`
-    ALTER TABLE checkins ADD COLUMN IF NOT EXISTS nolan_moment TEXT
-  `;
+  await sql`ALTER TABLE checkins ADD COLUMN IF NOT EXISTS nolan_moment TEXT`;
+  await sql`ALTER TABLE checkins ADD COLUMN IF NOT EXISTS work_done TEXT`;
+  await sql`ALTER TABLE checkins ADD COLUMN IF NOT EXISTS skill_edge TEXT`;
+  await sql`ALTER TABLE checkins ADD COLUMN IF NOT EXISTS tomorrow_plan TEXT`;
   await sql`
     CREATE TABLE IF NOT EXISTS conversation_state (
       id SERIAL PRIMARY KEY,
@@ -35,10 +35,16 @@ export async function initDb() {
       last_bot_message_id TEXT,
       answers JSONB DEFAULT '{}',
       status TEXT DEFAULT 'active',
+      type TEXT DEFAULT 'personal',
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE conversation_state ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'personal'`;
+  // Allow multiple conversations per day (personal + work) by dropping unique constraint on date
+  // and adding a unique constraint on (date, type) instead
+  await sql`DROP INDEX IF EXISTS conversation_state_date_key`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS conversation_state_date_type_key ON conversation_state(date, type)`;
   initialized = true;
 }
 
@@ -62,19 +68,22 @@ export async function getCheckins(limit = 90): Promise<CheckIn[]> {
 export async function upsertCheckin(data: CheckInInput): Promise<CheckIn> {
   await initDb();
   const { rows } = await sql`
-    INSERT INTO checkins (date, weight, journaled, journal_detail, worked_out, workout_detail, built_shipped, felt_spirit, brightened_day, nolan_moment, daily_journal)
-    VALUES (${data.date}, ${data.weight}, ${data.journaled}, ${data.journal_detail}, ${data.worked_out}, ${data.workout_detail}, ${data.built_shipped}, ${data.felt_spirit}, ${data.brightened_day}, ${data.nolan_moment}, ${data.daily_journal})
+    INSERT INTO checkins (date, weight, journaled, journal_detail, worked_out, workout_detail, built_shipped, felt_spirit, brightened_day, nolan_moment, daily_journal, work_done, skill_edge, tomorrow_plan)
+    VALUES (${data.date}, ${data.weight}, ${data.journaled}, ${data.journal_detail}, ${data.worked_out}, ${data.workout_detail}, ${data.built_shipped}, ${data.felt_spirit}, ${data.brightened_day}, ${data.nolan_moment}, ${data.daily_journal}, ${data.work_done}, ${data.skill_edge}, ${data.tomorrow_plan})
     ON CONFLICT (date) DO UPDATE SET
-      weight = EXCLUDED.weight,
-      journaled = EXCLUDED.journaled,
-      journal_detail = EXCLUDED.journal_detail,
-      worked_out = EXCLUDED.worked_out,
-      workout_detail = EXCLUDED.workout_detail,
-      built_shipped = EXCLUDED.built_shipped,
-      felt_spirit = EXCLUDED.felt_spirit,
-      brightened_day = EXCLUDED.brightened_day,
-      nolan_moment = EXCLUDED.nolan_moment,
-      daily_journal = EXCLUDED.daily_journal,
+      weight = COALESCE(EXCLUDED.weight, checkins.weight),
+      journaled = CASE WHEN EXCLUDED.journaled THEN EXCLUDED.journaled ELSE checkins.journaled END,
+      journal_detail = COALESCE(EXCLUDED.journal_detail, checkins.journal_detail),
+      worked_out = CASE WHEN EXCLUDED.worked_out THEN EXCLUDED.worked_out ELSE checkins.worked_out END,
+      workout_detail = COALESCE(EXCLUDED.workout_detail, checkins.workout_detail),
+      built_shipped = COALESCE(EXCLUDED.built_shipped, checkins.built_shipped),
+      felt_spirit = CASE WHEN EXCLUDED.felt_spirit THEN EXCLUDED.felt_spirit ELSE checkins.felt_spirit END,
+      brightened_day = CASE WHEN EXCLUDED.brightened_day THEN EXCLUDED.brightened_day ELSE checkins.brightened_day END,
+      nolan_moment = COALESCE(EXCLUDED.nolan_moment, checkins.nolan_moment),
+      daily_journal = COALESCE(EXCLUDED.daily_journal, checkins.daily_journal),
+      work_done = COALESCE(EXCLUDED.work_done, checkins.work_done),
+      skill_edge = COALESCE(EXCLUDED.skill_edge, checkins.skill_edge),
+      tomorrow_plan = COALESCE(EXCLUDED.tomorrow_plan, checkins.tomorrow_plan),
       updated_at = NOW()
     RETURNING *
   `;
@@ -83,7 +92,6 @@ export async function upsertCheckin(data: CheckInInput): Promise<CheckIn> {
 
 export async function updateJournal(date: string, journal: string): Promise<CheckIn> {
   await initDb();
-  // Upsert: if no checkin exists for this date, create a minimal one with just the journal
   const { rows } = await sql`
     INSERT INTO checkins (date, daily_journal)
     VALUES (${date}, ${journal})
@@ -111,6 +119,9 @@ function rowToCheckin(row: Record<string, unknown>): CheckIn {
     brightened_day: row.brightened_day as boolean,
     nolan_moment: row.nolan_moment as string | null,
     daily_journal: row.daily_journal as string | null,
+    work_done: row.work_done as string | null,
+    skill_edge: row.skill_edge as string | null,
+    tomorrow_plan: row.tomorrow_plan as string | null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
   };

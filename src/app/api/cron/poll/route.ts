@@ -90,6 +90,9 @@ export async function GET(request: Request) {
       brightened_day: a.brightened_day === true,
       nolan_moment: typeof a.nolan_moment === "string" ? a.nolan_moment : null,
       daily_journal: typeof a.daily_journal === "string" ? a.daily_journal : null,
+      work_done: typeof a.work_done === "string" ? a.work_done : null,
+      skill_edge: typeof a.skill_edge === "string" ? a.skill_edge : null,
+      tomorrow_plan: typeof a.tomorrow_plan === "string" ? a.tomorrow_plan : null,
     });
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dayscore-five.vercel.app";
