@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/poll",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/budget-guard",
+      "schedule": "0 */6 * * *"
     }
   ]
 }
