@@ -41,9 +41,14 @@ export async function initDb() {
     )
   `;
   await sql`ALTER TABLE conversation_state ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'personal'`;
-  // Allow multiple conversations per day (personal + work) by dropping unique constraint on date
-  // and adding a unique constraint on (date, type) instead
-  await sql`DROP INDEX IF EXISTS conversation_state_date_key`;
+  // Allow multiple conversations per day (personal + work)
+  // Drop the old unique constraint on date alone (try both possible names)
+  try {
+    await sql`ALTER TABLE conversation_state DROP CONSTRAINT IF EXISTS conversation_state_date_key`;
+  } catch { /* constraint may not exist */ }
+  try {
+    await sql`DROP INDEX IF EXISTS conversation_state_date_key`;
+  } catch { /* index may not exist */ }
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS conversation_state_date_type_key ON conversation_state(date, type)`;
   initialized = true;
 }

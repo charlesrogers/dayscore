@@ -28,6 +28,17 @@ const authHeaders = {
   Authorization: `Bearer ${CRON_SECRET}`,
 };
 
+async function callApi(url, options = {}) {
+  const res = await fetch(url, options);
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error(`[DayScore Bot] Non-JSON response (${res.status}): ${text}`);
+    return { error: text, status: res.status };
+  }
+}
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (message.channelId !== CHANNEL_ID) return;
@@ -36,35 +47,29 @@ client.on("messageCreate", async (message) => {
   console.log(`[DayScore Bot] Message from ${message.author.username}: ${message.content}`);
 
   try {
-    // Command: !checkin — start personal check-in
     if (text === "!checkin") {
-      const res = await fetch(`${API_URL}/api/start-checkin?type=personal`, {
+      const data = await callApi(`${API_URL}/api/start-checkin?type=personal`, {
         method: "POST",
         headers: authHeaders,
       });
-      const data = await res.json();
       console.log(`[DayScore Bot] !checkin response:`, data);
       return;
     }
 
-    // Command: !work — start work check-in
     if (text === "!work") {
-      const res = await fetch(`${API_URL}/api/start-checkin?type=work`, {
+      const data = await callApi(`${API_URL}/api/start-checkin?type=work`, {
         method: "POST",
         headers: authHeaders,
       });
-      const data = await res.json();
       console.log(`[DayScore Bot] !work response:`, data);
       return;
     }
 
-    // Command: stop — dismiss active conversation
     if (text === "stop") {
-      const res = await fetch(`${API_URL}/api/stop-checkin`, {
+      const data = await callApi(`${API_URL}/api/stop-checkin`, {
         method: "POST",
         headers: authHeaders,
       });
-      const data = await res.json();
       console.log(`[DayScore Bot] stop response:`, data);
       return;
     }
@@ -74,8 +79,7 @@ client.on("messageCreate", async (message) => {
       a.contentType?.startsWith("audio/") || a.name?.endsWith(".ogg")
     );
 
-    // Regular message — relay to discord-reply for conversation processing
-    const res = await fetch(`${API_URL}/api/discord-reply`, {
+    const data = await callApi(`${API_URL}/api/discord-reply`, {
       method: "POST",
       headers: authHeaders,
       body: JSON.stringify({
@@ -86,7 +90,6 @@ client.on("messageCreate", async (message) => {
       }),
     });
 
-    const data = await res.json();
     console.log(`[DayScore Bot] API response:`, data);
   } catch (err) {
     console.error(`[DayScore Bot] Error calling API:`, err);
