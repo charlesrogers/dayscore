@@ -19,6 +19,7 @@ interface Settings {
 }
 
 const TYPE_LABELS: Record<string, string> = {
+  questions_morning: "Morning",
   questions_personal: "Personal Check-in",
   questions_work: "Work Check-in",
   questions_week: "Weekly Review",
@@ -27,6 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TYPE_ORDER = [
+  "questions_morning",
   "questions_personal",
   "questions_work",
   "questions_week",

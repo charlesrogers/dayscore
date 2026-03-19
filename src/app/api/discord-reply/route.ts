@@ -92,6 +92,15 @@ export async function POST(request: Request) {
   const a = updatedConvo.answers;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dayscore-five.vercel.app";
 
+  // Morning — simple confirmation
+  if (convo.type === "morning") {
+    const parts = ["**Morning set.** Go get it! ☀️"];
+    if (a.intention) parts.push(`Intention: ${a.intention}`);
+    if (a.most_important) parts.push(`#1 priority: ${a.most_important}`);
+    await sendMessage(channelId, parts.join("\n"));
+    return Response.json({ ok: true, complete: true, type: "morning" });
+  }
+
   // Nightcap — advance the question index after answering
   if (convo.type === "nightcap") {
     const { advanceNightcapIndex } = await import("@/lib/db");

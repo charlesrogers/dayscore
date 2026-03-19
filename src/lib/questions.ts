@@ -76,6 +76,11 @@ export function getNightcapQuestion(index: number): Question {
   return { id: "nightcap_answer", text: q, type: "text", field: "nightcap_answer" };
 }
 
+export const MORNING_QUESTIONS: Question[] = [
+  { id: "intention", text: "What is your intention for the day?", type: "text", field: "intention" },
+  { id: "most_important", text: "What is the most important thing you are going to do?", type: "text", field: "most_important" },
+];
+
 export function getQuestionsForType(type: string, nightcapIndex?: number): Question[] {
   switch (type) {
     case "work": return WORK_QUESTIONS;
@@ -83,6 +88,7 @@ export function getQuestionsForType(type: string, nightcapIndex?: number): Quest
     case "month": return MONTH_QUESTIONS;
     case "relationship": return RELATIONSHIP_QUESTIONS;
     case "nightcap": return [getNightcapQuestion(nightcapIndex ?? 0)];
+    case "morning": return MORNING_QUESTIONS;
     default: return PERSONAL_QUESTIONS;
   }
 }

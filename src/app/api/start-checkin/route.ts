@@ -41,6 +41,9 @@ export async function POST(request: Request) {
 
     let greeting: string;
     switch (type) {
+      case "morning":
+        greeting = `Good morning! ☀️\n\n**${firstQuestion.text}**`;
+        break;
       case "work":
         greeting = `Work check-in time.\n\n**${firstQuestion.text}**`;
         break;

@@ -92,6 +92,15 @@ client.on("messageCreate", async (message) => {
       return;
     }
 
+    if (text === "!morning") {
+      const data = await callApi(`${API_URL}/api/start-checkin?type=morning`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !morning response:`, data);
+      return;
+    }
+
     if (text === "!nightcap") {
       const data = await callApi(`${API_URL}/api/start-checkin?type=nightcap`, {
         method: "POST",

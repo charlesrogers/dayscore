@@ -31,9 +31,10 @@ export async function GET(request: Request) {
     );
     const mtDayName = now.toLocaleString("en-US", { timeZone: "America/Denver", weekday: "short" });
 
-    // Schedule: work=5pm daily, personal=9pm daily, nightcap=10pm daily
+    // Schedule: morning=7am, work=5pm, personal=9pm, nightcap=10pm daily
     // week/month=Sun 9:30am, relationship=Sun 7pm
     const schedules: Record<string, { hour: number; minute?: number; dayOfWeek?: string }> = {
+      morning: { hour: 7 },
       work: { hour: 17 },
       personal: { hour: 21 },
       nightcap: { hour: 22 },

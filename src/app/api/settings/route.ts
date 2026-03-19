@@ -5,9 +5,11 @@ import {
   WEEK_QUESTIONS,
   MONTH_QUESTIONS,
   RELATIONSHIP_QUESTIONS,
+  MORNING_QUESTIONS,
 } from "@/lib/questions";
 
 const DEFAULT_QUESTIONS: Record<string, unknown> = {
+  questions_morning: MORNING_QUESTIONS,
   questions_personal: PERSONAL_QUESTIONS,
   questions_work: WORK_QUESTIONS,
   questions_week: WEEK_QUESTIONS,
@@ -16,6 +18,7 @@ const DEFAULT_QUESTIONS: Record<string, unknown> = {
 };
 
 const SCHEDULE = {
+  morning: { time: "7:00 AM", days: "Daily" },
   personal: { time: "9:00 PM", days: "Daily" },
   work: { time: "5:00 PM", days: "Daily" },
   nightcap: { time: "10:00 PM", days: "Daily" },
