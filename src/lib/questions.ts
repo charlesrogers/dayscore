@@ -88,3 +88,13 @@ export function getQuestionsForType(type: string, nightcapIndex?: number): Quest
 }
 
 export const NIGHTCAP_TOTAL = NIGHTCAP_QUESTIONS.length;
+
+// Get questions with DB overrides applied
+export async function getQuestionsForTypeFromDb(type: string, nightcapIndex?: number): Promise<Question[]> {
+  const { getSetting } = await import("./db");
+  const customQuestions = await getSetting(`questions_${type}`) as Question[] | null;
+  if (customQuestions && Array.isArray(customQuestions) && customQuestions.length > 0) {
+    return customQuestions;
+  }
+  return getQuestionsForType(type, nightcapIndex);
+}

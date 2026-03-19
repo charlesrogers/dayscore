@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Sun, Moon, LayoutDashboard, Briefcase, BookOpen, MessageSquare } from "lucide-react";
+import { Sun, Moon, LayoutDashboard, Briefcase, BookOpen, Settings, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/work", label: "Work", icon: Briefcase },
   { href: "/reviews", label: "Reviews", icon: BookOpen },
+  { href: "/settings", label: "Settings", icon: Settings },
   { href: "/checkin", label: "Check In", icon: MessageSquare },
 ];
 

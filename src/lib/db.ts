@@ -67,6 +67,13 @@ export async function initDb() {
     )
   `;
   await sql`INSERT INTO nightcap_state (id, current_index) VALUES (1, 0) ON CONFLICT (id) DO NOTHING`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
   initialized = true;
 }
 
@@ -141,6 +148,31 @@ export async function getReviews(type: ReviewType, limit = 20): Promise<Review[]
     SELECT * FROM reviews WHERE type = ${type} ORDER BY date DESC LIMIT ${limit}
   `;
   return rows.map(rowToReview);
+}
+
+export async function getSetting(key: string): Promise<unknown | null> {
+  await initDb();
+  const { rows } = await sql`SELECT value FROM settings WHERE key = ${key}`;
+  if (rows.length === 0) return null;
+  return rows[0].value;
+}
+
+export async function setSetting(key: string, value: unknown): Promise<void> {
+  await initDb();
+  await sql`
+    INSERT INTO settings (key, value) VALUES (${key}, ${JSON.stringify(value)})
+    ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify(value)}, updated_at = NOW()
+  `;
+}
+
+export async function getAllSettings(): Promise<Record<string, unknown>> {
+  await initDb();
+  const { rows } = await sql`SELECT key, value FROM settings`;
+  const result: Record<string, unknown> = {};
+  for (const row of rows) {
+    result[row.key as string] = row.value;
+  }
+  return result;
 }
 
 export async function getNightcapIndex(): Promise<number> {

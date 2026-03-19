@@ -7,7 +7,7 @@ import {
   updateBotMessageId,
   parseAnswer,
 } from "@/lib/conversation";
-import { getQuestionsForType } from "@/lib/questions";
+import { getQuestionsForType, getQuestionsForTypeFromDb } from "@/lib/questions";
 import { calculateScore } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     return Response.json({ skipped: true, reason: "No active conversation" });
   }
 
-  const questions = getQuestionsForType(convo.type);
+  const questions = await getQuestionsForTypeFromDb(convo.type);
 
   // Find current question
   const currentQuestion = findQuestionById(convo.current_question_id, questions);

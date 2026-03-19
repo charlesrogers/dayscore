@@ -1,5 +1,5 @@
 import { sql } from "@vercel/postgres";
-import { getQuestionsForType } from "./questions";
+import { getQuestionsForType, getQuestionsForTypeFromDb } from "./questions";
 import { CheckInInput, ConversationType, Question, isReviewType, ReviewType } from "./types";
 import { upsertCheckin, saveReview } from "./db";
 
@@ -115,7 +115,7 @@ export async function advanceConversation(
   convo: ConversationState,
   answerValue: string | number | boolean | null
 ): Promise<{ nextQuestion: Question | null; updatedConvo: ConversationState }> {
-  const questions = getQuestionsForType(convo.type);
+  const questions = await getQuestionsForTypeFromDb(convo.type);
   const currentQuestion = findQuestionById(convo.current_question_id, questions);
   if (!currentQuestion) throw new Error(`Unknown question: ${convo.current_question_id}`);
 
