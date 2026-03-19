@@ -69,6 +69,11 @@ client.on("messageCreate", async (message) => {
       return;
     }
 
+    // Check for voice/audio attachment
+    const audioAttachment = message.attachments.find(a =>
+      a.contentType?.startsWith("audio/") || a.name?.endsWith(".ogg")
+    );
+
     // Regular message — relay to discord-reply for conversation processing
     const res = await fetch(`${API_URL}/api/discord-reply`, {
       method: "POST",
@@ -77,6 +82,7 @@ client.on("messageCreate", async (message) => {
         content: message.content,
         authorId: message.author.id,
         messageId: message.id,
+        audioUrl: audioAttachment?.url || null,
       }),
     });
 

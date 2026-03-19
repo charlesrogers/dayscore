@@ -16,11 +16,38 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { content } = (await request.json()) as {
+  let { content, audioUrl } = (await request.json()) as {
     content: string;
     authorId: string;
     messageId: string;
+    audioUrl: string | null;
   };
+
+  // Transcribe voice messages via OpenAI Whisper
+  if (audioUrl && !content?.trim()) {
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (openaiKey) {
+      try {
+        const audioRes = await fetch(audioUrl);
+        const audioBlob = await audioRes.blob();
+        const formData = new FormData();
+        formData.append("file", new File([audioBlob], "voice.ogg", { type: "audio/ogg" }));
+        formData.append("model", "whisper-1");
+        const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${openaiKey}` },
+          body: formData,
+        });
+        const whisperData = await whisperRes.json();
+        if (whisperData.text) {
+          content = whisperData.text;
+          console.log(`[Whisper] Transcribed: ${content}`);
+        }
+      } catch (err) {
+        console.error("[Whisper] Transcription failed:", err);
+      }
+    }
+  }
 
   const channelId = process.env.DISCORD_CHANNEL_ID;
   if (!channelId) {
