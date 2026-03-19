@@ -1,7 +1,7 @@
 import { sql } from "@vercel/postgres";
 import { getQuestionsForType } from "./questions";
-import { CheckInInput, ConversationType, Question } from "./types";
-import { upsertCheckin } from "./db";
+import { CheckInInput, ConversationType, Question, isReviewType, ReviewType } from "./types";
+import { upsertCheckin, saveReview } from "./db";
 
 export interface ConversationState {
   id: number;
@@ -151,6 +151,18 @@ export async function completeConversation(
   convo: ConversationState
 ): Promise<void> {
   const a = convo.answers;
+
+  // Reviews go to the reviews table
+  if (isReviewType(convo.type)) {
+    const stringAnswers: Record<string, string> = {};
+    for (const [key, val] of Object.entries(a)) {
+      if (val != null) stringAnswers[key] = String(val);
+    }
+    await saveReview(convo.date, convo.type as ReviewType, stringAnswers);
+    return;
+  }
+
+  // Daily check-ins go to the checkins table
   const input: CheckInInput = {
     date: convo.date,
     weight: typeof a.weight === "number" ? a.weight : null,

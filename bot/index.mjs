@@ -65,6 +65,33 @@ client.on("messageCreate", async (message) => {
       return;
     }
 
+    if (text === "!week") {
+      const data = await callApi(`${API_URL}/api/start-checkin?type=week`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !week response:`, data);
+      return;
+    }
+
+    if (text === "!month") {
+      const data = await callApi(`${API_URL}/api/start-checkin?type=month`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !month response:`, data);
+      return;
+    }
+
+    if (text === "!relationship") {
+      const data = await callApi(`${API_URL}/api/start-checkin?type=relationship`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !relationship response:`, data);
+      return;
+    }
+
     if (text === "stop") {
       const data = await callApi(`${API_URL}/api/stop-checkin`, {
         method: "POST",

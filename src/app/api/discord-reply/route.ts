@@ -91,6 +91,23 @@ export async function POST(request: Request) {
   const a = updatedConvo.answers;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dayscore-five.vercel.app";
 
+  // Review types (week, month, relationship)
+  if (["week", "month", "relationship"].includes(convo.type)) {
+    const labels: Record<string, string> = {
+      week: "Weekly Review",
+      month: "Monthly Review",
+      relationship: "Relationship Review",
+    };
+    const parts = [`**${labels[convo.type]} complete!**`];
+    const questionList = getQuestionsForType(convo.type);
+    for (const q of questionList) {
+      if (a[q.field]) parts.push(`**${q.text}**\n${a[q.field]}`);
+    }
+    parts.push(`\nDashboard: ${appUrl}/reviews`);
+    await sendMessage(channelId, parts.join("\n\n"));
+    return Response.json({ ok: true, complete: true, type: convo.type });
+  }
+
   if (convo.type === "work") {
     const parts = ["**Work check-in complete!**"];
     if (a.work_done) parts.push(`Done today: ${a.work_done}`);

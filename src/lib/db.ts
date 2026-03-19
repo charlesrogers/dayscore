@@ -1,5 +1,5 @@
 import { sql } from "@vercel/postgres";
-import { CheckIn, CheckInInput } from "./types";
+import { CheckIn, CheckInInput, Review, ReviewType } from "./types";
 
 let initialized = false;
 
@@ -50,6 +50,16 @@ export async function initDb() {
     await sql`DROP INDEX IF EXISTS conversation_state_date_key`;
   } catch { /* index may not exist */ }
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS conversation_state_date_type_key ON conversation_state(date, type)`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id SERIAL PRIMARY KEY,
+      date DATE NOT NULL,
+      type TEXT NOT NULL,
+      answers JSONB NOT NULL DEFAULT '{}',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS reviews_date_type_idx ON reviews(date DESC, type)`;
   initialized = true;
 }
 
@@ -106,6 +116,38 @@ export async function updateJournal(date: string, journal: string): Promise<Chec
     RETURNING *
   `;
   return rowToCheckin(rows[0]);
+}
+
+export async function saveReview(date: string, type: ReviewType, answers: Record<string, string>): Promise<Review> {
+  await initDb();
+  const { rows } = await sql`
+    INSERT INTO reviews (date, type, answers)
+    VALUES (${date}, ${type}, ${JSON.stringify(answers)})
+    RETURNING *
+  `;
+  return rowToReview(rows[0]);
+}
+
+export async function getReviews(type: ReviewType, limit = 20): Promise<Review[]> {
+  await initDb();
+  const { rows } = await sql`
+    SELECT * FROM reviews WHERE type = ${type} ORDER BY date DESC LIMIT ${limit}
+  `;
+  return rows.map(rowToReview);
+}
+
+function rowToReview(row: Record<string, unknown>): Review {
+  return {
+    id: row.id as number,
+    date: row.date instanceof Date
+      ? row.date.toISOString().split("T")[0]
+      : String(row.date).split("T")[0],
+    type: row.type as ReviewType,
+    answers: typeof row.answers === "string"
+      ? JSON.parse(row.answers)
+      : (row.answers as Record<string, string>) || {},
+    created_at: row.created_at as string,
+  };
 }
 
 function rowToCheckin(row: Record<string, unknown>): CheckIn {

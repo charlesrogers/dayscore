@@ -35,14 +35,23 @@ export interface CheckInInput {
   tomorrow_plan: string | null;
 }
 
+export interface Review {
+  id: number;
+  date: string;
+  type: ReviewType;
+  answers: Record<string, string>;
+  created_at: string;
+}
+
 export type QuestionType = "number" | "yesno" | "text" | "textarea";
-export type ConversationType = "personal" | "work";
+export type ConversationType = "personal" | "work" | "week" | "month" | "relationship";
+export type ReviewType = "week" | "month" | "relationship";
 
 export interface Question {
   id: string;
   text: string;
   type: QuestionType;
-  field: keyof CheckInInput;
+  field: string;
   followUp?: {
     condition: boolean;
     question: Omit<Question, "followUp">;
@@ -59,4 +68,8 @@ export function calculateScore(checkin: CheckIn | CheckInInput): number {
   if (checkin.felt_spirit) score++;
   if (checkin.brightened_day) score++;
   return score;
+}
+
+export function isReviewType(type: string): type is ReviewType {
+  return ["week", "month", "relationship"].includes(type);
 }
