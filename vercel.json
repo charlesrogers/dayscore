@@ -33,6 +33,14 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/cron/digest",
+      "schedule": "0 15 * * 0"
+    },
+    {
+      "path": "/api/cron/digest",
+      "schedule": "0 16 * * 0"
+    },
+    {
       "path": "/api/cron/notify?type=week",
       "schedule": "30 15 * * 0"
     },

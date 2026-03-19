@@ -203,6 +203,50 @@ function rowToReview(row: Record<string, unknown>): Review {
   };
 }
 
+export async function getRandomPastEntry(): Promise<{ date: string; type: string; content: string } | null> {
+  await initDb();
+  const { rows } = await sql`
+    SELECT date, nolan_moment, daily_journal, felt_spirit
+    FROM checkins
+    WHERE date < CURRENT_DATE - INTERVAL '7 days'
+      AND (nolan_moment IS NOT NULL OR daily_journal IS NOT NULL OR felt_spirit = true)
+    ORDER BY RANDOM()
+    LIMIT 1
+  `;
+  if (rows.length === 0) return null;
+  const row = rows[0];
+  const date = row.date instanceof Date
+    ? row.date.toISOString().split("T")[0]
+    : String(row.date).split("T")[0];
+
+  if (row.nolan_moment) {
+    return { date, type: "Nolan moment", content: row.nolan_moment as string };
+  }
+  if (row.daily_journal) {
+    return { date, type: "Journal", content: row.daily_journal as string };
+  }
+  if (row.felt_spirit) {
+    return { date, type: "Felt the Spirit", content: "You felt the Spirit this day." };
+  }
+  return null;
+}
+
+export async function getCheckinsForDateRange(start: string, end: string): Promise<CheckIn[]> {
+  await initDb();
+  const { rows } = await sql`
+    SELECT * FROM checkins WHERE date >= ${start} AND date <= ${end} ORDER BY date ASC
+  `;
+  return rows.map(rowToCheckin);
+}
+
+export async function getReviewsForDateRange(type: string, start: string, end: string): Promise<Review[]> {
+  await initDb();
+  const { rows } = await sql`
+    SELECT * FROM reviews WHERE type = ${type} AND date >= ${start} AND date <= ${end} ORDER BY date ASC
+  `;
+  return rows.map(rowToReview);
+}
+
 function rowToCheckin(row: Record<string, unknown>): CheckIn {
   return {
     id: row.id as number,

@@ -1,4 +1,4 @@
-import { initDb, getNightcapIndex } from "@/lib/db";
+import { initDb, getNightcapIndex, getRandomPastEntry } from "@/lib/db";
 import { sendMessage } from "@/lib/discord";
 import { createConversation, getActiveConversation } from "@/lib/conversation";
 import { getQuestionsForType } from "@/lib/questions";
@@ -38,6 +38,16 @@ export async function POST(request: Request) {
 
     const questions = getQuestionsForType(type, nightcapIndex);
     const firstQuestion = questions[0];
+
+    // "Remember This" — resurface a past entry during morning flow
+    if (type === "morning") {
+      const pastEntry = await getRandomPastEntry();
+      if (pastEntry) {
+        const d = new Date(pastEntry.date + "T12:00:00");
+        const formatted = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        await sendMessage(channelId, `**Remember This** (${formatted})\n${pastEntry.type}: "${pastEntry.content}"`);
+      }
+    }
 
     let greeting: string;
     switch (type) {
