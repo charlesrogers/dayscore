@@ -23,10 +23,16 @@ export async function POST(request: Request) {
     audioUrl: string | null;
   };
 
+  const channelId = process.env.DISCORD_CHANNEL_ID;
+  if (!channelId) {
+    return Response.json({ error: "No channel ID configured" }, { status: 500 });
+  }
+
   // Transcribe voice messages via OpenAI Whisper
   if (audioUrl && !content?.trim()) {
     const openaiKey = process.env.OPENAI_API_KEY;
     if (openaiKey) {
+      await sendMessage(channelId, "Thanks! Processing your voice message...");
       try {
         const audioRes = await fetch(audioUrl);
         const audioBlob = await audioRes.blob();
@@ -47,11 +53,6 @@ export async function POST(request: Request) {
         console.error("[Whisper] Transcription failed:", err);
       }
     }
-  }
-
-  const channelId = process.env.DISCORD_CHANNEL_ID;
-  if (!channelId) {
-    return Response.json({ error: "No channel ID configured" }, { status: 500 });
   }
 
   await initDb();
@@ -90,6 +91,15 @@ export async function POST(request: Request) {
   await completeConversation(updatedConvo);
   const a = updatedConvo.answers;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dayscore-five.vercel.app";
+
+  // Nightcap — advance the question index after answering
+  if (convo.type === "nightcap") {
+    const { advanceNightcapIndex } = await import("@/lib/db");
+    const { NIGHTCAP_TOTAL } = await import("@/lib/questions");
+    await advanceNightcapIndex(NIGHTCAP_TOTAL);
+    await sendMessage(channelId, `**Nightcap logged.** Good night! 🌙\nDashboard: ${appUrl}/reviews`);
+    return Response.json({ ok: true, complete: true, type: "nightcap" });
+  }
 
   // Review types (week, month, relationship)
   if (["week", "month", "relationship"].includes(convo.type)) {

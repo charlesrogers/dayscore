@@ -1,4 +1,4 @@
-import { initDb } from "@/lib/db";
+import { initDb, getNightcapIndex } from "@/lib/db";
 import { sendMessage } from "@/lib/discord";
 import { createConversation, getActiveConversation } from "@/lib/conversation";
 import { getQuestionsForType } from "@/lib/questions";
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       }),
       10
     );
-    const expectedHour = type === "work" ? 17 : 21;
+    const expectedHour = type === "work" ? 17 : type === "nightcap" ? 22 : 21;
     if (mtHour !== expectedHour) {
       return Response.json({ skipped: true, reason: `Not ${expectedHour}:00 MT for ${type}` });
     }
@@ -47,11 +47,21 @@ export async function GET(request: Request) {
     return Response.json({ skipped: true, reason: `${type} conversation already active` });
   }
 
-  const questions = getQuestionsForType(type);
+  let nightcapIndex: number | undefined;
+  if (type === "nightcap") {
+    nightcapIndex = await getNightcapIndex();
+  }
+
+  const questions = getQuestionsForType(type, nightcapIndex);
   const firstQuestion = questions[0];
-  const greeting = type === "work"
-    ? `Hey Charles, work check-in for ${today}.\n\n**${firstQuestion.text}**`
-    : `Hey Charles, let's check in for ${today}.\n\n**${firstQuestion.text}**`;
+  let greeting: string;
+  if (type === "nightcap") {
+    greeting = `Nightcap time! 🌙 Question ${(nightcapIndex ?? 0) + 1} of 245:\n\n**${firstQuestion.text}**`;
+  } else if (type === "work") {
+    greeting = `Hey Charles, work check-in for ${today}.\n\n**${firstQuestion.text}**`;
+  } else {
+    greeting = `Hey Charles, let's check in for ${today}.\n\n**${firstQuestion.text}**`;
+  }
 
   const msg = await sendMessage(channelId, greeting);
   await createConversation(today, channelId, firstQuestion.id, msg.id, type);

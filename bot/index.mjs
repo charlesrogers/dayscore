@@ -92,6 +92,24 @@ client.on("messageCreate", async (message) => {
       return;
     }
 
+    if (text === "!nightcap") {
+      const data = await callApi(`${API_URL}/api/start-checkin?type=nightcap`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !nightcap response:`, data);
+      return;
+    }
+
+    if (text === "!skip") {
+      const data = await callApi(`${API_URL}/api/skip-nightcap`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !skip response:`, data);
+      return;
+    }
+
     if (text === "stop") {
       const data = await callApi(`${API_URL}/api/stop-checkin`, {
         method: "POST",

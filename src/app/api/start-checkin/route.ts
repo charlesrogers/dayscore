@@ -1,4 +1,4 @@
-import { initDb } from "@/lib/db";
+import { initDb, getNightcapIndex } from "@/lib/db";
 import { sendMessage } from "@/lib/discord";
 import { createConversation, getActiveConversation } from "@/lib/conversation";
 import { getQuestionsForType } from "@/lib/questions";
@@ -30,11 +30,35 @@ export async function POST(request: Request) {
       return Response.json({ error: `Already have an active ${existing.type} conversation. Type "stop" first.` }, { status: 409 });
     }
 
-    const questions = getQuestionsForType(type);
+    // For nightcap, get the current question index
+    let nightcapIndex: number | undefined;
+    if (type === "nightcap") {
+      nightcapIndex = await getNightcapIndex();
+    }
+
+    const questions = getQuestionsForType(type, nightcapIndex);
     const firstQuestion = questions[0];
-    const greeting = type === "work"
-      ? `Work check-in time.\n\n**${firstQuestion.text}**`
-      : `Let's check in.\n\n**${firstQuestion.text}**`;
+
+    let greeting: string;
+    switch (type) {
+      case "work":
+        greeting = `Work check-in time.\n\n**${firstQuestion.text}**`;
+        break;
+      case "nightcap":
+        greeting = `Nightcap time! 🌙 Question ${(nightcapIndex ?? 0) + 1} of 245:\n\n**${firstQuestion.text}**`;
+        break;
+      case "week":
+        greeting = `Weekly review time.\n\n**${firstQuestion.text}**`;
+        break;
+      case "month":
+        greeting = `Monthly review time.\n\n**${firstQuestion.text}**`;
+        break;
+      case "relationship":
+        greeting = `Relationship review time.\n\n**${firstQuestion.text}**`;
+        break;
+      default:
+        greeting = `Let's check in.\n\n**${firstQuestion.text}**`;
+    }
 
     const msg = await sendMessage(channelId, greeting);
     await createConversation(today, channelId, firstQuestion.id, msg.id, type);

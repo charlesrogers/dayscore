@@ -16,11 +16,13 @@ function ReviewCard({ review }: { review: Review }) {
     week: "Weekly Review",
     month: "Monthly Review",
     relationship: "Relationship Review",
+    nightcap: "Nightcap",
   };
   const colors: Record<string, string> = {
     week: "bg-chart-1/10 text-chart-1",
     month: "bg-chart-2/10 text-chart-2",
     relationship: "bg-chart-5/10 text-chart-5",
+    nightcap: "bg-chart-3/10 text-chart-3",
   };
 
   return (
@@ -51,12 +53,14 @@ export default async function ReviewsPage() {
   let weekReviews: Review[] = [];
   let monthReviews: Review[] = [];
   let relationshipReviews: Review[] = [];
+  let nightcapReviews: Review[] = [];
 
   try {
-    [weekReviews, monthReviews, relationshipReviews] = await Promise.all([
+    [weekReviews, monthReviews, relationshipReviews, nightcapReviews] = await Promise.all([
       getReviews("week", 10),
       getReviews("month", 10),
       getReviews("relationship", 10),
+      getReviews("nightcap", 30),
     ]);
   } catch {
     return (
@@ -69,7 +73,7 @@ export default async function ReviewsPage() {
     );
   }
 
-  const allReviews = [...weekReviews, ...monthReviews, ...relationshipReviews]
+  const allReviews = [...weekReviews, ...monthReviews, ...relationshipReviews, ...nightcapReviews]
     .sort((a, b) => b.date.localeCompare(a.date));
 
   return (

@@ -1,4 +1,5 @@
 import { Question } from "./types";
+import { NIGHTCAP_QUESTIONS } from "./nightcap-questions";
 
 export const PERSONAL_QUESTIONS: Question[] = [
   { id: "weight", text: "Weight?", type: "number", field: "weight" },
@@ -70,12 +71,20 @@ export const RELATIONSHIP_QUESTIONS: Question[] = [
 
 export const QUESTIONS = PERSONAL_QUESTIONS;
 
-export function getQuestionsForType(type: string): Question[] {
+export function getNightcapQuestion(index: number): Question {
+  const q = NIGHTCAP_QUESTIONS[index % NIGHTCAP_QUESTIONS.length];
+  return { id: "nightcap_answer", text: q, type: "text", field: "nightcap_answer" };
+}
+
+export function getQuestionsForType(type: string, nightcapIndex?: number): Question[] {
   switch (type) {
     case "work": return WORK_QUESTIONS;
     case "week": return WEEK_QUESTIONS;
     case "month": return MONTH_QUESTIONS;
     case "relationship": return RELATIONSHIP_QUESTIONS;
+    case "nightcap": return [getNightcapQuestion(nightcapIndex ?? 0)];
     default: return PERSONAL_QUESTIONS;
   }
 }
+
+export const NIGHTCAP_TOTAL = NIGHTCAP_QUESTIONS.length;

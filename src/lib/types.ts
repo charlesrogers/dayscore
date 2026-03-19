@@ -44,8 +44,8 @@ export interface Review {
 }
 
 export type QuestionType = "number" | "yesno" | "text" | "textarea";
-export type ConversationType = "personal" | "work" | "week" | "month" | "relationship";
-export type ReviewType = "week" | "month" | "relationship";
+export type ConversationType = "personal" | "work" | "week" | "month" | "relationship" | "nightcap";
+export type ReviewType = "week" | "month" | "relationship" | "nightcap";
 
 export interface Question {
   id: string;
@@ -71,5 +71,5 @@ export function calculateScore(checkin: CheckIn | CheckInInput): number {
 }
 
 export function isReviewType(type: string): type is ReviewType {
-  return ["week", "month", "relationship"].includes(type);
+  return ["week", "month", "relationship", "nightcap"].includes(type);
 }

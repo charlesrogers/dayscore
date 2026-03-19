@@ -60,6 +60,13 @@ export async function initDb() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS reviews_date_type_idx ON reviews(date DESC, type)`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS nightcap_state (
+      id INTEGER PRIMARY KEY DEFAULT 1,
+      current_index INTEGER DEFAULT 0
+    )
+  `;
+  await sql`INSERT INTO nightcap_state (id, current_index) VALUES (1, 0) ON CONFLICT (id) DO NOTHING`;
   initialized = true;
 }
 
@@ -134,6 +141,20 @@ export async function getReviews(type: ReviewType, limit = 20): Promise<Review[]
     SELECT * FROM reviews WHERE type = ${type} ORDER BY date DESC LIMIT ${limit}
   `;
   return rows.map(rowToReview);
+}
+
+export async function getNightcapIndex(): Promise<number> {
+  await initDb();
+  const { rows } = await sql`SELECT current_index FROM nightcap_state WHERE id = 1`;
+  return rows[0]?.current_index ?? 0;
+}
+
+export async function advanceNightcapIndex(total: number): Promise<number> {
+  await initDb();
+  const { rows } = await sql`
+    UPDATE nightcap_state SET current_index = (current_index + 1) % ${total} WHERE id = 1 RETURNING current_index
+  `;
+  return rows[0].current_index;
 }
 
 function rowToReview(row: Record<string, unknown>): Review {

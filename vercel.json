@@ -17,6 +17,14 @@
       "schedule": "0 0 * * *"
     },
     {
+      "path": "/api/cron/notify?type=nightcap",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/notify?type=nightcap",
+      "schedule": "0 5 * * *"
+    },
+    {
       "path": "/api/cron/poll",
       "schedule": "*/5 * * * *"
     },
