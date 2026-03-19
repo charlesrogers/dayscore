@@ -25,6 +25,30 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/cron/notify?type=week",
+      "schedule": "30 15 * * 0"
+    },
+    {
+      "path": "/api/cron/notify?type=week",
+      "schedule": "30 16 * * 0"
+    },
+    {
+      "path": "/api/cron/notify?type=month",
+      "schedule": "30 15 * * 0"
+    },
+    {
+      "path": "/api/cron/notify?type=month",
+      "schedule": "30 16 * * 0"
+    },
+    {
+      "path": "/api/cron/notify?type=relationship",
+      "schedule": "0 1 * * 1"
+    },
+    {
+      "path": "/api/cron/notify?type=relationship",
+      "schedule": "0 2 * * 1"
+    },
+    {
       "path": "/api/cron/poll",
       "schedule": "*/5 * * * *"
     },

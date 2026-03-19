@@ -14,19 +14,45 @@ export async function GET(request: Request) {
   const force = searchParams.get("force") === "true";
   const type = (searchParams.get("type") || "personal") as ConversationType;
 
-  // Time guard: personal=9pm MT, work=5pm MT
+  // Time guard per type
   if (!force) {
+    const now = new Date();
     const mtHour = parseInt(
-      new Date().toLocaleString("en-US", {
-        timeZone: "America/Denver",
-        hour: "numeric",
-        hour12: false,
-      }),
+      now.toLocaleString("en-US", { timeZone: "America/Denver", hour: "numeric", hour12: false }),
       10
     );
-    const expectedHour = type === "work" ? 17 : type === "nightcap" ? 22 : 21;
-    if (mtHour !== expectedHour) {
-      return Response.json({ skipped: true, reason: `Not ${expectedHour}:00 MT for ${type}` });
+    const mtMinute = parseInt(
+      now.toLocaleString("en-US", { timeZone: "America/Denver", minute: "numeric" }),
+      10
+    );
+    const mtDay = parseInt(
+      now.toLocaleString("en-US", { timeZone: "America/Denver", weekday: "short" }).slice(0, 3),
+      10
+    );
+    const mtDayName = now.toLocaleString("en-US", { timeZone: "America/Denver", weekday: "short" });
+
+    // Schedule: work=5pm daily, personal=9pm daily, nightcap=10pm daily
+    // week/month=Sun 9:30am, relationship=Sun 7pm
+    const schedules: Record<string, { hour: number; minute?: number; dayOfWeek?: string }> = {
+      work: { hour: 17 },
+      personal: { hour: 21 },
+      nightcap: { hour: 22 },
+      week: { hour: 9, minute: 30, dayOfWeek: "Sun" },
+      month: { hour: 9, minute: 30, dayOfWeek: "Sun" },
+      relationship: { hour: 19, dayOfWeek: "Sun" },
+    };
+
+    const sched = schedules[type];
+    if (sched) {
+      if (sched.dayOfWeek && mtDayName !== sched.dayOfWeek) {
+        return Response.json({ skipped: true, reason: `Not ${sched.dayOfWeek} for ${type}` });
+      }
+      if (mtHour !== sched.hour) {
+        return Response.json({ skipped: true, reason: `Not ${sched.hour}:${String(sched.minute ?? 0).padStart(2, "0")} MT for ${type}` });
+      }
+      if (sched.minute !== undefined && Math.abs(mtMinute - sched.minute) > 5) {
+        return Response.json({ skipped: true, reason: `Not ${sched.hour}:${String(sched.minute).padStart(2, "0")} MT for ${type}` });
+      }
     }
   }
 
