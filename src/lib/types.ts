@@ -44,7 +44,7 @@ export interface Review {
 }
 
 export type QuestionType = "number" | "yesno" | "text" | "textarea";
-export type ConversationType = "personal" | "work" | "week" | "month" | "relationship" | "nightcap" | "morning";
+export type ConversationType = "personal" | "work" | "week" | "month" | "relationship" | "nightcap" | "morning" | "todo" | "log";
 export type ReviewType = "week" | "month" | "relationship" | "nightcap" | "morning";
 
 export interface Question {

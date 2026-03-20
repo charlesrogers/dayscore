@@ -92,6 +92,28 @@ export async function POST(request: Request) {
   const a = updatedConvo.answers;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dayscore-five.vercel.app";
 
+  // Todo — save to todos table
+  if (convo.type === "todo") {
+    const { saveTodo } = await import("@/lib/db");
+    const content = typeof a.todo_content === "string" ? a.todo_content : null;
+    if (content) {
+      const entry = await saveTodo(content);
+      await sendMessage(channelId, `Added todo #${entry.id}.`);
+    }
+    return Response.json({ ok: true, complete: true, type: "todo" });
+  }
+
+  // Log — save to logs table
+  if (convo.type === "log") {
+    const { saveLog } = await import("@/lib/db");
+    const content = typeof a.log_content === "string" ? a.log_content : null;
+    if (content) {
+      const entry = await saveLog(content);
+      await sendMessage(channelId, `Logged. (#${entry.id})`);
+    }
+    return Response.json({ ok: true, complete: true, type: "log" });
+  }
+
   // Morning — simple confirmation
   if (convo.type === "morning") {
     const parts = ["**Morning set.** Go get it! ☀️"];

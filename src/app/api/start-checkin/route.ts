@@ -69,6 +69,12 @@ export async function POST(request: Request) {
       case "relationship":
         greeting = `Relationship review time.\n\n**${firstQuestion.text}**`;
         break;
+      case "todo":
+        greeting = `**${firstQuestion.text}**`;
+        break;
+      case "log":
+        greeting = `**${firstQuestion.text}**`;
+        break;
       default:
         greeting = `Let's check in.\n\n**${firstQuestion.text}**`;
     }

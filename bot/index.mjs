@@ -39,6 +39,16 @@ async function callApi(url, options = {}) {
   }
 }
 
+async function dismissActive() {
+  const data = await callApi(`${API_URL}/api/stop-checkin`, {
+    method: "POST",
+    headers: authHeaders,
+  });
+  if (data.dismissed) {
+    console.log(`[DayScore Bot] Dismissed active conversation`);
+  }
+}
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (message.channelId !== CHANNEL_ID) return;
@@ -47,6 +57,8 @@ client.on("messageCreate", async (message) => {
   console.log(`[DayScore Bot] Message from ${message.author.username}: ${message.content}`);
 
   try {
+    // --- Commands that don't need to dismiss active conversations ---
+
     if (text === "!commands") {
       await message.channel.send(
         [
@@ -59,105 +71,12 @@ client.on("messageCreate", async (message) => {
           "`!month` — Start monthly review",
           "`!relationship` — Start relationship review",
           "`!skip` — Skip current nightcap",
-          "`!todo <task>` — Add a todo item",
-          "`!log <thought>` — Save a thought to your log",
+          "`!todo` / `!todo <task>` — Add a todo item",
+          "`!log` / `!log <thought>` — Save a thought to your log",
           "`!commands` — Show this list",
           "`stop` — Dismiss active check-in",
         ].join("\n")
       );
-      return;
-    }
-
-    if (text.startsWith("!todo ")) {
-      const todoContent = message.content.trim().slice(6).trim();
-      if (!todoContent) {
-        await message.channel.send("Usage: `!todo <task here>`");
-        return;
-      }
-      const data = await callApi(`${API_URL}/api/todo`, {
-        method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify({ content: todoContent }),
-      });
-      console.log(`[DayScore Bot] !todo response:`, data);
-      return;
-    }
-
-    if (text.startsWith("!log ")) {
-      const logContent = message.content.trim().slice(5).trim();
-      if (!logContent) {
-        await message.channel.send("Usage: `!log <your thought here>`");
-        return;
-      }
-      const data = await callApi(`${API_URL}/api/log`, {
-        method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify({ content: logContent }),
-      });
-      console.log(`[DayScore Bot] !log response:`, data);
-      return;
-    }
-
-    if (text === "!checkin") {
-      const data = await callApi(`${API_URL}/api/start-checkin?type=personal`, {
-        method: "POST",
-        headers: authHeaders,
-      });
-      console.log(`[DayScore Bot] !checkin response:`, data);
-      return;
-    }
-
-    if (text === "!work") {
-      const data = await callApi(`${API_URL}/api/start-checkin?type=work`, {
-        method: "POST",
-        headers: authHeaders,
-      });
-      console.log(`[DayScore Bot] !work response:`, data);
-      return;
-    }
-
-    if (text === "!week") {
-      const data = await callApi(`${API_URL}/api/start-checkin?type=week`, {
-        method: "POST",
-        headers: authHeaders,
-      });
-      console.log(`[DayScore Bot] !week response:`, data);
-      return;
-    }
-
-    if (text === "!month") {
-      const data = await callApi(`${API_URL}/api/start-checkin?type=month`, {
-        method: "POST",
-        headers: authHeaders,
-      });
-      console.log(`[DayScore Bot] !month response:`, data);
-      return;
-    }
-
-    if (text === "!relationship") {
-      const data = await callApi(`${API_URL}/api/start-checkin?type=relationship`, {
-        method: "POST",
-        headers: authHeaders,
-      });
-      console.log(`[DayScore Bot] !relationship response:`, data);
-      return;
-    }
-
-    if (text === "!morning") {
-      const data = await callApi(`${API_URL}/api/start-checkin?type=morning`, {
-        method: "POST",
-        headers: authHeaders,
-      });
-      console.log(`[DayScore Bot] !morning response:`, data);
-      return;
-    }
-
-    if (text === "!nightcap") {
-      const data = await callApi(`${API_URL}/api/start-checkin?type=nightcap`, {
-        method: "POST",
-        headers: authHeaders,
-      });
-      console.log(`[DayScore Bot] !nightcap response:`, data);
       return;
     }
 
@@ -176,6 +95,118 @@ client.on("messageCreate", async (message) => {
         headers: authHeaders,
       });
       console.log(`[DayScore Bot] stop response:`, data);
+      return;
+    }
+
+    // --- Commands that dismiss any active conversation first ---
+
+    if (text.startsWith("!todo")) {
+      const inlineContent = message.content.trim().slice(5).trim();
+      await dismissActive();
+      if (inlineContent) {
+        const data = await callApi(`${API_URL}/api/todo`, {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ content: inlineContent }),
+        });
+        console.log(`[DayScore Bot] !todo inline response:`, data);
+      } else {
+        const data = await callApi(`${API_URL}/api/start-checkin?type=todo`, {
+          method: "POST",
+          headers: authHeaders,
+        });
+        console.log(`[DayScore Bot] !todo prompted response:`, data);
+      }
+      return;
+    }
+
+    if (text.startsWith("!log")) {
+      const inlineContent = message.content.trim().slice(4).trim();
+      await dismissActive();
+      if (inlineContent) {
+        const data = await callApi(`${API_URL}/api/log`, {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ content: inlineContent }),
+        });
+        console.log(`[DayScore Bot] !log inline response:`, data);
+      } else {
+        const data = await callApi(`${API_URL}/api/start-checkin?type=log`, {
+          method: "POST",
+          headers: authHeaders,
+        });
+        console.log(`[DayScore Bot] !log prompted response:`, data);
+      }
+      return;
+    }
+
+    if (text === "!checkin") {
+      await dismissActive();
+      const data = await callApi(`${API_URL}/api/start-checkin?type=personal`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !checkin response:`, data);
+      return;
+    }
+
+    if (text === "!work") {
+      await dismissActive();
+      const data = await callApi(`${API_URL}/api/start-checkin?type=work`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !work response:`, data);
+      return;
+    }
+
+    if (text === "!week") {
+      await dismissActive();
+      const data = await callApi(`${API_URL}/api/start-checkin?type=week`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !week response:`, data);
+      return;
+    }
+
+    if (text === "!month") {
+      await dismissActive();
+      const data = await callApi(`${API_URL}/api/start-checkin?type=month`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !month response:`, data);
+      return;
+    }
+
+    if (text === "!relationship") {
+      await dismissActive();
+      const data = await callApi(`${API_URL}/api/start-checkin?type=relationship`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !relationship response:`, data);
+      return;
+    }
+
+    if (text === "!morning") {
+      await dismissActive();
+      const data = await callApi(`${API_URL}/api/start-checkin?type=morning`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !morning response:`, data);
+      return;
+    }
+
+    if (text === "!nightcap") {
+      await dismissActive();
+      const data = await callApi(`${API_URL}/api/start-checkin?type=nightcap`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      console.log(`[DayScore Bot] !nightcap response:`, data);
       return;
     }
 

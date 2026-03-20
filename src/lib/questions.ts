@@ -81,6 +81,14 @@ export const MORNING_QUESTIONS: Question[] = [
   { id: "most_important", text: "What is the most important thing you are going to do?", type: "text", field: "most_important" },
 ];
 
+export const TODO_QUESTIONS: Question[] = [
+  { id: "todo_content", text: "What's the task?", type: "text", field: "todo_content" },
+];
+
+export const LOG_QUESTIONS: Question[] = [
+  { id: "log_content", text: "What's on your mind?", type: "text", field: "log_content" },
+];
+
 export function getQuestionsForType(type: string, nightcapIndex?: number): Question[] {
   switch (type) {
     case "work": return WORK_QUESTIONS;
@@ -89,6 +97,8 @@ export function getQuestionsForType(type: string, nightcapIndex?: number): Quest
     case "relationship": return RELATIONSHIP_QUESTIONS;
     case "nightcap": return [getNightcapQuestion(nightcapIndex ?? 0)];
     case "morning": return MORNING_QUESTIONS;
+    case "todo": return TODO_QUESTIONS;
+    case "log": return LOG_QUESTIONS;
     default: return PERSONAL_QUESTIONS;
   }
 }
