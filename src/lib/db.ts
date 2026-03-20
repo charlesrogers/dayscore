@@ -68,6 +68,21 @@ export async function initDb() {
   `;
   await sql`INSERT INTO nightcap_state (id, current_index) VALUES (1, 0) ON CONFLICT (id) DO NOTHING`;
   await sql`
+    CREATE TABLE IF NOT EXISTS logs (
+      id SERIAL PRIMARY KEY,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS todos (
+      id SERIAL PRIMARY KEY,
+      content TEXT NOT NULL,
+      done BOOLEAN DEFAULT false,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value JSONB NOT NULL,
@@ -187,6 +202,22 @@ export async function advanceNightcapIndex(total: number): Promise<number> {
     UPDATE nightcap_state SET current_index = (current_index + 1) % ${total} WHERE id = 1 RETURNING current_index
   `;
   return rows[0].current_index;
+}
+
+export async function saveTodo(content: string): Promise<{ id: number; created_at: string }> {
+  await initDb();
+  const { rows } = await sql`
+    INSERT INTO todos (content) VALUES (${content}) RETURNING id, created_at
+  `;
+  return { id: rows[0].id as number, created_at: rows[0].created_at as string };
+}
+
+export async function saveLog(content: string): Promise<{ id: number; created_at: string }> {
+  await initDb();
+  const { rows } = await sql`
+    INSERT INTO logs (content) VALUES (${content}) RETURNING id, created_at
+  `;
+  return { id: rows[0].id as number, created_at: rows[0].created_at as string };
 }
 
 function rowToReview(row: Record<string, unknown>): Review {

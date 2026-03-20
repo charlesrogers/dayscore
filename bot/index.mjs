@@ -47,6 +47,57 @@ client.on("messageCreate", async (message) => {
   console.log(`[DayScore Bot] Message from ${message.author.username}: ${message.content}`);
 
   try {
+    if (text === "!commands") {
+      await message.channel.send(
+        [
+          "**DayScore Commands**",
+          "`!checkin` — Start personal check-in",
+          "`!work` — Start work check-in",
+          "`!morning` — Start morning intention",
+          "`!nightcap` — Start nightcap question",
+          "`!week` — Start weekly review",
+          "`!month` — Start monthly review",
+          "`!relationship` — Start relationship review",
+          "`!skip` — Skip current nightcap",
+          "`!todo <task>` — Add a todo item",
+          "`!log <thought>` — Save a thought to your log",
+          "`!commands` — Show this list",
+          "`stop` — Dismiss active check-in",
+        ].join("\n")
+      );
+      return;
+    }
+
+    if (text.startsWith("!todo ")) {
+      const todoContent = message.content.trim().slice(6).trim();
+      if (!todoContent) {
+        await message.channel.send("Usage: `!todo <task here>`");
+        return;
+      }
+      const data = await callApi(`${API_URL}/api/todo`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ content: todoContent }),
+      });
+      console.log(`[DayScore Bot] !todo response:`, data);
+      return;
+    }
+
+    if (text.startsWith("!log ")) {
+      const logContent = message.content.trim().slice(5).trim();
+      if (!logContent) {
+        await message.channel.send("Usage: `!log <your thought here>`");
+        return;
+      }
+      const data = await callApi(`${API_URL}/api/log`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ content: logContent }),
+      });
+      console.log(`[DayScore Bot] !log response:`, data);
+      return;
+    }
+
     if (text === "!checkin") {
       const data = await callApi(`${API_URL}/api/start-checkin?type=personal`, {
         method: "POST",

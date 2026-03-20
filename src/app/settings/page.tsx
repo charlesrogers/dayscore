@@ -136,7 +136,7 @@ export default function SettingsPage() {
           ))}
         </div>
         <p className="text-[11px] text-muted-foreground mt-3">
-          Schedule changes require a code deploy. Use Discord commands anytime: !checkin, !work, !week, !month, !relationship, !nightcap
+          Schedule changes require a code deploy. Use Discord commands anytime: !checkin, !work, !week, !month, !relationship, !nightcap, !log, !todo, !commands
         </p>
       </div>
 
