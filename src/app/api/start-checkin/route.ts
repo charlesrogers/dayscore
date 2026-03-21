@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         greeting = `Work check-in time.\n\n**${firstQuestion.text}**`;
         break;
       case "nightcap":
-        greeting = `Nightcap time! 🌙 Question ${(nightcapIndex ?? 0) + 1} of 245:\n\n**${firstQuestion.text}**`;
+        greeting = `Nightcap time! 🌙\n\n**${firstQuestion.text}**`;
         break;
       case "week":
         greeting = `Weekly review time.\n\n**${firstQuestion.text}**`;

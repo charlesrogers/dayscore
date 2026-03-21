@@ -76,6 +76,17 @@ export function getNightcapQuestion(index: number): Question {
   return { id: "nightcap_answer", text: q, type: "text", field: "nightcap_answer" };
 }
 
+export function getNightcapQuestions(index: number): Question[] {
+  const charlesFirst = index % 2 === 0;
+  const first: Question = charlesFirst
+    ? { id: "day_charles", text: "Charles, tell me at least 1 thing about your day.", type: "text", field: "day_charles" }
+    : { id: "day_catherine", text: "Catherine, tell me at least 1 thing about your day.", type: "text", field: "day_catherine" };
+  const second: Question = charlesFirst
+    ? { id: "day_catherine", text: "Catherine, tell me at least 1 thing about your day.", type: "text", field: "day_catherine" }
+    : { id: "day_charles", text: "Charles, tell me at least 1 thing about your day.", type: "text", field: "day_charles" };
+  return [first, second, getNightcapQuestion(index)];
+}
+
 export const MORNING_QUESTIONS: Question[] = [
   { id: "intention", text: "What is your intention for the day?", type: "text", field: "intention" },
   { id: "most_important", text: "What is the most important thing you are going to do?", type: "text", field: "most_important" },
@@ -95,7 +106,7 @@ export function getQuestionsForType(type: string, nightcapIndex?: number): Quest
     case "week": return WEEK_QUESTIONS;
     case "month": return MONTH_QUESTIONS;
     case "relationship": return RELATIONSHIP_QUESTIONS;
-    case "nightcap": return [getNightcapQuestion(nightcapIndex ?? 0)];
+    case "nightcap": return getNightcapQuestions(nightcapIndex ?? 0);
     case "morning": return MORNING_QUESTIONS;
     case "todo": return TODO_QUESTIONS;
     case "log": return LOG_QUESTIONS;

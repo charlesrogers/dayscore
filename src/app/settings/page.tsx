@@ -25,6 +25,7 @@ const TYPE_LABELS: Record<string, string> = {
   questions_week: "Weekly Review",
   questions_month: "Monthly Review",
   questions_relationship: "Relationship Review",
+  questions_nightcap: "Nightcap",
 };
 
 const TYPE_ORDER = [
@@ -34,6 +35,7 @@ const TYPE_ORDER = [
   "questions_week",
   "questions_month",
   "questions_relationship",
+  "questions_nightcap",
 ];
 
 export default function SettingsPage() {

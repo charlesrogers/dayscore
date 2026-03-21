@@ -83,7 +83,7 @@ export async function GET(request: Request) {
   const firstQuestion = questions[0];
   let greeting: string;
   if (type === "nightcap") {
-    greeting = `Nightcap time! 🌙 Question ${(nightcapIndex ?? 0) + 1} of 245:\n\n**${firstQuestion.text}**`;
+    greeting = `Nightcap time! 🌙\n\n**${firstQuestion.text}**`;
   } else if (type === "work") {
     greeting = `Hey Charles, work check-in for ${today}.\n\n**${firstQuestion.text}**`;
   } else {
