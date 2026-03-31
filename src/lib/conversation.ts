@@ -1,5 +1,6 @@
-import { sql } from "@vercel/postgres";
-import { getQuestionsForType, getQuestionsForTypeFromDb } from "./questions";
+import { sql } from "./sql";
+import { getQuestionsForType } from "./questions";
+import { getQuestionsForTypeFromDb } from "./questions-server";
 import { CheckInInput, ConversationType, Question, isReviewType, ReviewType } from "./types";
 import { upsertCheckin, saveReview } from "./db";
 

@@ -7,7 +7,8 @@ import {
   updateBotMessageId,
   parseAnswer,
 } from "@/lib/conversation";
-import { getQuestionsForType, getQuestionsForTypeFromDb } from "@/lib/questions";
+import { getQuestionsForType } from "@/lib/questions";
+import { getQuestionsForTypeFromDb } from "@/lib/questions-server";
 import { calculateScore } from "@/lib/types";
 
 export async function POST(request: Request) {

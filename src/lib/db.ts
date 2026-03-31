@@ -1,4 +1,4 @@
-import { sql } from "@vercel/postgres";
+import { sql } from "./sql";
 import { CheckIn, CheckInInput, Review, ReviewType } from "./types";
 
 let initialized = false;
@@ -193,7 +193,7 @@ export async function getAllSettings(): Promise<Record<string, unknown>> {
 export async function getNightcapIndex(): Promise<number> {
   await initDb();
   const { rows } = await sql`SELECT current_index FROM nightcap_state WHERE id = 1`;
-  return rows[0]?.current_index ?? 0;
+  return (rows[0]?.current_index as number) ?? 0;
 }
 
 export async function advanceNightcapIndex(total: number): Promise<number> {
@@ -201,7 +201,7 @@ export async function advanceNightcapIndex(total: number): Promise<number> {
   const { rows } = await sql`
     UPDATE nightcap_state SET current_index = (current_index + 1) % ${total} WHERE id = 1 RETURNING current_index
   `;
-  return rows[0].current_index;
+  return rows[0].current_index as number;
 }
 
 export async function saveTodo(content: string): Promise<{ id: number; created_at: string }> {
