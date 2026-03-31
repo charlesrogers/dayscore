@@ -12,6 +12,11 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Get previous SHA for rollback
+        id: prev
+        run: echo "sha=$(git rev-parse HEAD~1)" >> $GITHUB_OUTPUT
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -28,7 +33,50 @@ jobs:
             ghcr.io/charlesrogers/dayscore-app:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Deploy
+      - name: Deploy, verify, rollback if needed
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          APP_UUID: swxqiag2o25wb1g0vd09579j
+          HEALTH_URL: https://dayscore.imprevista.com/api/health
+          PREV_SHA: ${{ steps.prev.outputs.sha }}
+          DISCORD_WEBHOOK: https://discord.com/api/webhooks/1486969921542946887/SAD4fP0-JaPrGmnEs_W2WIZmiRMQt1T2kQSbgnNenTTjnRq0YcqNkkLsKdvyPJ5pAA6y
         run: |
-          curl -sf -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            "http://95.216.205.160:8000/api/v1/deploy?uuid=swxqiag2o25wb1g0vd09579j&force=true"
+          curl -sf -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            "http://95.216.205.160:8000/api/v1/deploy?uuid=$APP_UUID&force=true"
+          echo "Deploy triggered"
+
+          HEALTHY=false
+          for i in $(seq 1 20); do
+            sleep 10
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || echo "000")
+            echo "Health check $i/20: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              HEALTHY=true
+              break
+            fi
+          done
+
+          if [ "$HEALTHY" = "true" ]; then
+            echo "Deploy verified healthy"
+            exit 0
+          fi
+
+          echo "::error::Health check failed — rolling back to $PREV_SHA"
+          curl -sf -X PATCH \
+            -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"docker_registry_image_tag\": \"$PREV_SHA\"}" \
+            "http://95.216.205.160:8000/api/v1/applications/$APP_UUID"
+          curl -sf -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            "http://95.216.205.160:8000/api/v1/deploy?uuid=$APP_UUID&force=true"
+          sleep 30
+          curl -sf -X PATCH \
+            -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"docker_registry_image_tag": "latest"}' \
+            "http://95.216.205.160:8000/api/v1/applications/$APP_UUID"
+
+          curl -sf -H "Content-Type: application/json" \
+            -d "{\"content\": \"**ROLLBACK** ${GITHUB_REPOSITORY}: deploy \`${GITHUB_SHA:0:7}\` failed health check. Rolled back to \`${PREV_SHA:0:7}\`. <https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}>\"}" \
+            "$DISCORD_WEBHOOK" || true
+          exit 1
