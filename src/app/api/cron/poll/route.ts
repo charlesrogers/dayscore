@@ -7,11 +7,10 @@ import {
   updateBotMessageId,
   parseAnswer,
 } from "@/lib/conversation";
-import { QUESTIONS } from "@/lib/questions";
-import { calculateScore } from "@/lib/types";
+import { getQuestionsForTypeFromDb } from "@/lib/questions-server";
+import { calculateScore, Question } from "@/lib/types";
 
 export async function GET(request: Request) {
-  // Verify Vercel cron secret
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,8 +50,9 @@ export async function GET(request: Request) {
   // Process the first user message as the answer
   const userMsg = userMessages[0];
 
-  // Find current question to know the type
-  const currentQuestion = findQuestionById(convo.current_question_id);
+  // Use DB-backed questions (same source as discord-reply)
+  const questions = await getQuestionsForTypeFromDb(convo.type);
+  const currentQuestion = findQuestionById(convo.current_question_id, questions);
   if (!currentQuestion) {
     return Response.json({ error: `Unknown question: ${convo.current_question_id}` }, { status: 500 });
   }
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
       tomorrow_plan: typeof a.tomorrow_plan === "string" ? a.tomorrow_plan : null,
     });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dayscore-five.vercel.app";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dayscore.imprevista.com";
     const parts = [`**Check-in complete! Score: ${score}/6**`];
     if (a.weight) parts.push(`Weight: ${a.weight} lbs`);
     parts.push(`Journal: ${a.journaled ? "Yes" : "No"}${a.journal_detail ? ` (${a.journal_detail})` : ""}`);
@@ -113,8 +113,8 @@ export async function GET(request: Request) {
   }
 }
 
-function findQuestionById(id: string) {
-  for (const q of QUESTIONS) {
+function findQuestionById(id: string, questions: Question[]) {
+  for (const q of questions) {
     if (q.id === id) return q;
     if (q.followUp && q.followUp.question.id === id) {
       return q.followUp.question;

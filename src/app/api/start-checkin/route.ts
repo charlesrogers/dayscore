@@ -1,6 +1,6 @@
 import { initDb, getNightcapIndex, getRandomPastEntry } from "@/lib/db";
 import { sendMessage } from "@/lib/discord";
-import { createConversation, getActiveConversation } from "@/lib/conversation";
+import { createConversation, getActiveConversation, expireStaleConversations } from "@/lib/conversation";
 import { getQuestionsForType } from "@/lib/questions";
 import { ConversationType } from "@/lib/types";
 
@@ -20,6 +20,10 @@ export async function POST(request: Request) {
     }
 
     await initDb();
+
+    // Auto-expire conversations older than 2 hours
+    const expired = await expireStaleConversations();
+    if (expired > 0) console.log(`[start-checkin] Expired ${expired} stale conversations`);
 
     const today = new Date().toLocaleDateString("en-CA", {
       timeZone: "America/Denver",

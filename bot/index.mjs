@@ -2,7 +2,7 @@ import { Client, GatewayIntentBits } from "discord.js";
 
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
-const API_URL = process.env.DAYSCORE_API_URL || "https://dayscore-five.vercel.app";
+const API_URL = process.env.DAYSCORE_API_URL || "https://dayscore.imprevista.com";
 const CRON_SECRET = process.env.CRON_SECRET;
 
 if (!BOT_TOKEN || !CHANNEL_ID || !CRON_SECRET) {
@@ -18,10 +18,60 @@ const client = new Client({
   ],
 });
 
+// --- Resilience: connection event handlers ---
 client.once("ready", () => {
-  console.log(`[DayScore Bot] Logged in as ${client.user.tag}`);
-  console.log(`[DayScore Bot] Watching channel ${CHANNEL_ID}`);
+  console.log(`[Bot] Logged in as ${client.user.tag}`);
+  console.log(`[Bot] Watching channel ${CHANNEL_ID}`);
+  console.log(`[Bot] API: ${API_URL}`);
 });
+
+client.on("error", (err) => {
+  console.error("[Bot] Client error:", err);
+});
+
+client.on("shardDisconnect", (event, shardId) => {
+  console.error(`[Bot] Shard ${shardId} disconnected (code ${event.code})`);
+});
+
+client.on("shardReconnecting", (shardId) => {
+  console.log(`[Bot] Shard ${shardId} reconnecting...`);
+});
+
+client.on("shardResume", (shardId) => {
+  console.log(`[Bot] Shard ${shardId} resumed`);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("[Bot] Unhandled rejection:", err);
+});
+
+// --- Health ping: check API every 5 min, alert after 3 consecutive failures ---
+let healthFailCount = 0;
+setInterval(async () => {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(`${API_URL}/api/health`, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      if (healthFailCount > 0) console.log(`[Bot] Health recovered after ${healthFailCount} failures`);
+      healthFailCount = 0;
+      return;
+    }
+    healthFailCount++;
+    console.error(`[Bot] Health check failed (${res.status}), count: ${healthFailCount}`);
+  } catch (err) {
+    healthFailCount++;
+    console.error(`[Bot] Health check error, count: ${healthFailCount}:`, err.message);
+  }
+
+  if (healthFailCount === 3) {
+    try {
+      const channel = client.channels.cache.get(CHANNEL_ID);
+      if (channel) await channel.send("API is unreachable (3 consecutive health check failures). Check dayscore-app container.");
+    } catch { /* don't recurse */ }
+  }
+}, 5 * 60 * 1000);
 
 const authHeaders = {
   "Content-Type": "application/json",
@@ -29,13 +79,25 @@ const authHeaders = {
 };
 
 async function callApi(url, options = {}) {
-  const res = await fetch(url, options);
-  const text = await res.text();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    return JSON.parse(text);
-  } catch {
-    console.error(`[DayScore Bot] Non-JSON response (${res.status}): ${text}`);
-    return { error: text, status: res.status };
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      console.error(`[Bot] Non-JSON response (${res.status}): ${text}`);
+      return { error: text, status: res.status };
+    }
+  } catch (err) {
+    if (err.name === "AbortError") {
+      console.error(`[Bot] API timeout (15s): ${url}`);
+      return { error: "timeout", status: 0 };
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -45,7 +107,7 @@ async function dismissActive() {
     headers: authHeaders,
   });
   if (data.dismissed) {
-    console.log(`[DayScore Bot] Dismissed active conversation`);
+    console.log(`[Bot] Dismissed active conversation`);
   }
 }
 
@@ -54,7 +116,7 @@ client.on("messageCreate", async (message) => {
   if (message.channelId !== CHANNEL_ID) return;
 
   const text = message.content.trim().toLowerCase();
-  console.log(`[DayScore Bot] Message from ${message.author.username}: ${message.content}`);
+  console.log(`[Bot] Message from ${message.author.username}: ${message.content}`);
 
   try {
     // --- Commands that don't need to dismiss active conversations ---
@@ -85,7 +147,7 @@ client.on("messageCreate", async (message) => {
         method: "POST",
         headers: authHeaders,
       });
-      console.log(`[DayScore Bot] !skip response:`, data);
+      console.log(`[Bot] !skip response:`, data);
       return;
     }
 
@@ -94,7 +156,7 @@ client.on("messageCreate", async (message) => {
         method: "POST",
         headers: authHeaders,
       });
-      console.log(`[DayScore Bot] stop response:`, data);
+      console.log(`[Bot] stop response:`, data);
       return;
     }
 
@@ -109,13 +171,13 @@ client.on("messageCreate", async (message) => {
           headers: authHeaders,
           body: JSON.stringify({ content: inlineContent }),
         });
-        console.log(`[DayScore Bot] !todo inline response:`, data);
+        console.log(`[Bot] !todo inline response:`, data);
       } else {
         const data = await callApi(`${API_URL}/api/start-checkin?type=todo`, {
           method: "POST",
           headers: authHeaders,
         });
-        console.log(`[DayScore Bot] !todo prompted response:`, data);
+        console.log(`[Bot] !todo prompted response:`, data);
       }
       return;
     }
@@ -129,13 +191,13 @@ client.on("messageCreate", async (message) => {
           headers: authHeaders,
           body: JSON.stringify({ content: inlineContent }),
         });
-        console.log(`[DayScore Bot] !log inline response:`, data);
+        console.log(`[Bot] !log inline response:`, data);
       } else {
         const data = await callApi(`${API_URL}/api/start-checkin?type=log`, {
           method: "POST",
           headers: authHeaders,
         });
-        console.log(`[DayScore Bot] !log prompted response:`, data);
+        console.log(`[Bot] !log prompted response:`, data);
       }
       return;
     }
@@ -146,7 +208,7 @@ client.on("messageCreate", async (message) => {
         method: "POST",
         headers: authHeaders,
       });
-      console.log(`[DayScore Bot] !checkin response:`, data);
+      console.log(`[Bot] !checkin response:`, data);
       return;
     }
 
@@ -156,7 +218,7 @@ client.on("messageCreate", async (message) => {
         method: "POST",
         headers: authHeaders,
       });
-      console.log(`[DayScore Bot] !work response:`, data);
+      console.log(`[Bot] !work response:`, data);
       return;
     }
 
@@ -166,7 +228,7 @@ client.on("messageCreate", async (message) => {
         method: "POST",
         headers: authHeaders,
       });
-      console.log(`[DayScore Bot] !week response:`, data);
+      console.log(`[Bot] !week response:`, data);
       return;
     }
 
@@ -176,7 +238,7 @@ client.on("messageCreate", async (message) => {
         method: "POST",
         headers: authHeaders,
       });
-      console.log(`[DayScore Bot] !month response:`, data);
+      console.log(`[Bot] !month response:`, data);
       return;
     }
 
@@ -186,7 +248,7 @@ client.on("messageCreate", async (message) => {
         method: "POST",
         headers: authHeaders,
       });
-      console.log(`[DayScore Bot] !relationship response:`, data);
+      console.log(`[Bot] !relationship response:`, data);
       return;
     }
 
@@ -196,7 +258,7 @@ client.on("messageCreate", async (message) => {
         method: "POST",
         headers: authHeaders,
       });
-      console.log(`[DayScore Bot] !morning response:`, data);
+      console.log(`[Bot] !morning response:`, data);
       return;
     }
 
@@ -206,7 +268,7 @@ client.on("messageCreate", async (message) => {
         method: "POST",
         headers: authHeaders,
       });
-      console.log(`[DayScore Bot] !nightcap response:`, data);
+      console.log(`[Bot] !nightcap response:`, data);
       return;
     }
 
@@ -226,9 +288,12 @@ client.on("messageCreate", async (message) => {
       }),
     });
 
-    console.log(`[DayScore Bot] API response:`, data);
+    console.log(`[Bot] API response:`, data);
   } catch (err) {
-    console.error(`[DayScore Bot] Error calling API:`, err);
+    console.error(`[Bot] Error:`, err);
+    try {
+      await message.channel.send("Something went wrong processing that. Check logs.");
+    } catch { /* don't recurse */ }
   }
 });
 

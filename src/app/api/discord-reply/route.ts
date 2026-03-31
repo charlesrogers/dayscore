@@ -52,6 +52,8 @@ export async function POST(request: Request) {
         }
       } catch (err) {
         console.error("[Whisper] Transcription failed:", err);
+        await sendMessage(channelId, "Voice transcription failed. Please type your answer instead.");
+        return Response.json({ error: "whisper_failed" }, { status: 500 });
       }
     }
   }

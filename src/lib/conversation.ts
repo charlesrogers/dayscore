@@ -183,6 +183,16 @@ export async function completeConversation(
   await upsertCheckin(input);
 }
 
+export async function expireStaleConversations(): Promise<number> {
+  const result = await sql`
+    UPDATE conversation_state
+    SET status = 'expired', updated_at = NOW()
+    WHERE status = 'active'
+      AND updated_at < NOW() - INTERVAL '2 hours'
+  `;
+  return result.rowCount ?? 0;
+}
+
 export async function dismissConversation(date: string): Promise<boolean> {
   const result = await sql`
     UPDATE conversation_state
