@@ -80,3 +80,26 @@ jobs:
             -d "{\"content\": \"**ROLLBACK** ${GITHUB_REPOSITORY}: deploy \`${GITHUB_SHA:0:7}\` failed health check. Rolled back to \`${PREV_SHA:0:7}\`. <https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}>\"}" \
             "$DISCORD_WEBHOOK" || true
           exit 1
+      - name: Publish to dev blog
+        if: success()
+        env:
+          BLOG_SECRET: ${{ secrets.BLOG_SECRET }}
+        run: |
+          TITLE=$(git log -1 --format="%s")
+          BODY=$(git log -1 --format="%b")
+          DIFF=$(git diff --stat HEAD~1 HEAD 2>/dev/null | tail -20)
+          SUMMARY=$(echo "$BODY" | head -3)
+          [ -z "$SUMMARY" ] && SUMMARY="$TITLE"
+          curl -sf -X POST "https://dev.imprevista.com/api/blog/publish" \
+            -H "Authorization: Bearer $BLOG_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg product "DayScore" \
+              --arg title "$TITLE" \
+              --arg summary "$SUMMARY" \
+              --arg body "$(printf '%s\n\n## Files Changed\n\n```\n%s\n```' "$BODY" "$DIFF")" \
+              --arg commit_sha "${{ github.sha }}" \
+              --arg commit_url "https://github.com/${{ github.repository }}/commit/${{ github.sha }}" \
+              --arg status "deployed" \
+              '{product:$product, title:$title, summary:$summary, body:$body, commit_sha:$commit_sha, commit_url:$commit_url, status:$status}')" \
+          || echo "::warning::Failed to publish to dev blog"
