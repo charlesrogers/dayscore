@@ -27,18 +27,28 @@ const SCHEDULE = {
   relationship: { time: "7:00 PM", days: "Sunday" },
 };
 
+interface CustomType {
+  key: string;
+  label: string;
+}
+
 export async function GET() {
   try {
     await initDb();
     const saved = await getAllSettings();
 
-    // Merge defaults with saved
+    const customTypes = (saved.custom_types as CustomType[] | undefined) ?? [];
+
     const questions: Record<string, unknown> = {};
     for (const [key, defaultVal] of Object.entries(DEFAULT_QUESTIONS)) {
       questions[key] = saved[key] ?? defaultVal;
     }
+    for (const t of customTypes) {
+      const settingKey = `questions_${t.key}`;
+      questions[settingKey] = saved[settingKey] ?? [];
+    }
 
-    return Response.json({ questions, schedule: SCHEDULE });
+    return Response.json({ questions, schedule: SCHEDULE, customTypes });
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 });
   }
@@ -48,8 +58,8 @@ export async function POST(request: Request) {
   try {
     const { key, value } = (await request.json()) as { key: string; value: unknown };
 
-    if (!key.startsWith("questions_")) {
-      return Response.json({ error: "Can only update question sets" }, { status: 400 });
+    if (!key.startsWith("questions_") && key !== "custom_types") {
+      return Response.json({ error: "Invalid settings key" }, { status: 400 });
     }
 
     await initDb();

@@ -1,7 +1,7 @@
 import { initDb, getNightcapIndex, getRandomPastEntry } from "@/lib/db";
 import { sendMessage } from "@/lib/discord";
 import { createConversation, getActiveConversation, expireStaleConversations } from "@/lib/conversation";
-import { getQuestionsForType } from "@/lib/questions";
+import { getQuestionsForTypeFromDb } from "@/lib/questions-server";
 import { ConversationType } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -40,7 +40,10 @@ export async function POST(request: Request) {
       nightcapIndex = await getNightcapIndex();
     }
 
-    const questions = getQuestionsForType(type, nightcapIndex);
+    const questions = await getQuestionsForTypeFromDb(type, nightcapIndex);
+    if (!questions || questions.length === 0) {
+      return Response.json({ error: `No questions configured for type "${type}"` }, { status: 400 });
+    }
     const firstQuestion = questions[0];
 
     // "Remember This" — resurface a past entry during morning flow
